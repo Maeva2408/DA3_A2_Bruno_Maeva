@@ -35,15 +35,16 @@ library(rpart.plot)
 
 
 # set working directory
-data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva/"
+data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva"
 
 # load theme and functions
 source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/theme_bg.R")
 source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/da_helper_functions.R")
 
-data_in <- paste(data_dir,"data/,clean/", sep = "/")
+data_in <- paste(data_dir,"data/clean/", sep = "/")
 output <- paste0(data_dir,"output/")
 create_output_if_doesnt_exist(output)
+data_out <- paste(data_dir,"data/clean/", sep = "/")
 
 
 
@@ -85,7 +86,7 @@ data <- data %>%
 data <- data %>%
   filter(year <=2013)
 
-Hmisc::describe(data$default3)
+Hmisc::describe(data$default)
 
 # Size and growth
 summary(data$sales) # There will be NAs, we'll drop them soon
@@ -126,13 +127,10 @@ data <- data %>%
   filter(!(sales_mil < 0.001))
 
 Hmisc::describe(data$default)
-write_csv(data,paste0(data_out,"work5.csv"))
 
 ###########################################################
 # Feature engineering
 ###########################################################
-
-data <- read_csv(paste0(data_out,"work5.csv"))
 
 # change some industry category codes
 data <- data %>%
