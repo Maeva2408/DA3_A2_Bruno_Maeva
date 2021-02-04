@@ -1,26 +1,13 @@
 #########################################################################################
-# Prepared for Gabor's Data Analysis
-#
-# Data Analysis for Business, Economics, and Policy
-# by Gabor Bekes and  Gabor Kezdi
-# Cambridge University Press 2021
-#
-# gabors-data-analysis.com 
-#
-# License: Free to share, modify and use for educational purposes. 
-# 	Not to be used for commercial purposes.
-
-# Chapter 17
-# CH17A
-# using the bisnode-firmd dataset
-# version 0.9 2020-09-10
-#########################################################################################
+# Prepared for Bruno and Maevas Data Analysis
+# DA3 Assignment 2 : Finding fast growing firms
+####################################################
 
 
 
 # ------------------------------------------------------------------------------------------------------
 #### SET UP
-# It is advised to start a new session for every case study
+
 # CLEAR MEMORY
 rm(list=ls())
 
@@ -48,24 +35,14 @@ library(rpart.plot)
 
 
 # set working directory
-# option A: open material as project
-# option B: set working directory for da_case_studies
-#           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
-
-# set data dir, data used
-source("set-data-directory.R")             # data_dir must be first defined 
-# alternative: give full path here, 
-#            example data_dir="C:/Users/bekes.gabor/Dropbox (MTA KRTK)/bekes_kezdi_textbook/da_data_repo"
+data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva/"
 
 # load theme and functions
-source("ch00-tech-prep/theme_bg.R")
-source("ch00-tech-prep/da_helper_functions.R")
+source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/theme_bg.R")
+source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/da_helper_functions.R")
 
-data_in <- paste(data_dir,"bisnode-firms","clean/", sep = "/")
-use_case_dir <- "ch17-predicting-firm-exit/"
-
-data_out <- use_case_dir
-output <- paste0(use_case_dir,"output/")
+data_in <- paste(data_dir,"data/,clean/", sep = "/")
+output <- paste0(data_dir,"output/")
 create_output_if_doesnt_exist(output)
 
 
@@ -74,7 +51,8 @@ create_output_if_doesnt_exist(output)
 # Import data
 ###########################################################
 
-data <- read_csv(paste(data_in,"cs_bisnode_panel.csv", sep = "/"))
+data <- read_csv("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/data/clean/cs_bisnode_panel.csv")
+
 
 # drop variables with many NAs
 data <- data %>%
