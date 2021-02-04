@@ -1,21 +1,7 @@
 #########################################################################################
-# Prepared for Gabor's Data Analysis
+# Prepared for Bruno and Maeva's Data Analysis
 #
-# Data Analysis for Business, Economics, and Policy
-# by Gabor Bekes and  Gabor Kezdi
-# Cambridge University Press 2021
-#
-# gabors-data-analysis.com 
-#
-# License: Free to share, modify and use for educational purposes. 
-# 	Not to be used for commercial purposes.
-
-
-# This code is co-authored with Zsuzsa Holler and Jeno Pal
-# Chapter 17
-# CH17A
-# using the bisnode-firmd dataset
-# version 0.9 2020-09-10
+# DA3 Assignment 2:Finding fast growing firms
 #########################################################################################
 
 
@@ -39,7 +25,7 @@ library(gmodels)
 library(lspline)
 library(sandwich)
 library(modelsummary)
-
+library(viridis)
 library(rattle)
 library(caret)
 library(pROC)
@@ -49,29 +35,18 @@ library(partykit)
 library(rpart.plot)
 
 
-# set working directory
-# option A: open material as project
-# option B: set working directory for da_case_studies
-#           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
 
-# set data dir, data used
-source("set-data-directory.R")             # data_dir must be first defined 
-# alternative: give full path here, 
-#            example data_dir="C:/Users/bekes.gabor/Dropbox (MTA KRTK)/bekes_kezdi_textbook/da_data_repo"
+# set working directory
+data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva"
 
 # load theme and functions
-source("ch00-tech-prep/theme_bg.R")
-source("ch00-tech-prep/da_helper_functions.R")
-options(digits = 3) 
+source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/theme_bg.R")
+source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/da_helper_functions.R")
 
-data_in <- paste(data_dir,"bisnode-firms","clean/", sep = "/")
-use_case_dir <- "ch17-predicting-firm-exit/"
-
-data_out <- use_case_dir
-output <- paste0(use_case_dir,"output/")
+data_in <- paste(data_dir,"data/clean/", sep = "/")
+output <- paste0(data_dir,"output/")
 create_output_if_doesnt_exist(output)
-
-
+data_out <- paste(data_dir,"data/clean/", sep = "/")
 #-----------------------------------------------------------------------------------------
 
 # THIS IS THE SECOND PART OF THE ch17 CODE
@@ -79,14 +54,13 @@ create_output_if_doesnt_exist(output)
 
 
 # Loading and preparing data ----------------------------------------------
+url <- "https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/data/clean/bisnode_firms_clean.rds"
+data <- readRDS(url(url, method="libcurl"))
 
-# Use R format so it keeps factor definitions
-# data <- read_csv(paste0(data_out,"bisnode_firms_clean.csv"))
-data <- read_rds(paste(data_out,"bisnode_firms_clean.rds", sep = "/"))
 
 #summary
 datasummary_skim(data, type='numeric', histogram = TRUE)
-# datasummary_skim(data, type="categorical")
+datasummary_skim(data, type="categorical")
 
 
 # Define variable sets ----------------------------------------------
@@ -251,6 +225,8 @@ for (model_name in names(logit_model_vars)) {
 
 }
 
+CV_RMSE_folds
+
 # Logit lasso -----------------------------------------------------------
 
 lambda <- 10^seq(-1, -4, length = 10)
@@ -277,7 +253,7 @@ lasso_coeffs <- as.matrix(coef(tuned_logit_lasso_model, best_lambda))
 write.csv(lasso_coeffs, paste0(output, "lasso_logit_coeffs.csv"))
 
 CV_RMSE_folds[["LASSO"]] <- logit_lasso_model$resample[,c("Resample", "RMSE")]
-
+CV_RMSE_folds[["LASSO"]]
 
 #############################################x
 # PART I
@@ -304,6 +280,8 @@ for (model_name in names(logit_models)) {
                                               "AUC" = unlist(auc))
 }
 
+CV_AUC_folds
+
 # For each model: average RMSE and average AUC for models ----------------------------------
 
 CV_RMSE <- list()
@@ -314,6 +292,8 @@ for (model_name in names(logit_models)) {
   CV_AUC[[model_name]] <- mean(CV_AUC_folds[[model_name]]$AUC)
 }
 
+CV_RMSE
+CV_AUC 
 # We have 6 models, (5 logit and the logit lasso). For each we have a 5-CV RMSE and AUC.
 # We pick our preferred model based on that. -----------------------------------------------
 
@@ -364,7 +344,7 @@ discrete_roc_plot <- ggplot(
   aes(x = false_positive_rate, y = true_positive_rate, color = threshold)) +
   labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)") +
   geom_point(size=2, alpha=0.8) +
-  scale_color_viridis(option = "D", direction = -1) +
+  #scale_color_viridis(option = "D", direction = -1) +
   scale_x_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
   scale_y_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
   theme_bg() +
