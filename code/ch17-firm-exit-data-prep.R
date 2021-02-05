@@ -33,7 +33,8 @@ library(ranger)
 library(rpart)
 library(partykit)
 library(rpart.plot)
-
+library(tidyr)
+library(readr)
 
 # set working directory
 data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva/")
@@ -158,23 +159,33 @@ data <- data %>%
  # sample design
 ###########################################################
 
-
-
 # look at cross section
 df <- data %>%
   filter((year == 2012) & (status_alive == 1)) %>% 
-  #  filter((year == 2012) & (status_alive == 1)) %>%
   # look at firms below 10m euro revenues and above 10000 euros
   filter(!(sales_mil > 10)) %>%
   filter(!(sales_mil < 0.01)) %>% 
   filter(!(is.na(HyperGrowth)))
 
-
-prop.table(table(df$HyperGrowth,df$year),2)
-
 ###########################################################
 # Feature engineering
 ###########################################################
+
+# Log of % YOY change of BS vars 
+df <- df %>%
+  group_by(comp_id) %>%
+  mutate(d1_working_capital_TO_ln = log(d1_working_capital_TO),
+         d1_current_assets_ln     = log(d1_current_assets),
+         d1_current_liab_ln       = log(d1_current_liab),
+         d1_extra_profit_loss_ln  = log(d1_extra_profit_loss),
+         d1_fixed_assets_ln       = log(d1_fixed_assets),
+         d1_inventories_ln        = log(d1_inventories),
+         d1_tang_assets_ln        = log(d1_tang_assets),
+         d1_amort_ln              = log(d1_amort),
+         d1_EBITDA_ln             = log(d1_EBITDA)
+  ) %>%
+  ungroup()
+
 
 # change some industry category codes
 df <- df %>%
@@ -203,7 +214,6 @@ df <- df %>%
 df <- df %>%
   mutate(total_assets_bs = intang_assets + curr_assets + fixed_assets)
 summary(df$total_assets_bs)
-
 
 pl_names <- c("extra_exp","extra_inc",  "extra_profit_loss", "inc_bef_tax" ,"inventories",
               "material_exp", "profit_loss_year", "personnel_exp")
@@ -364,7 +374,7 @@ df <- df %>%
 d1sale_2<-ggplot(data = df, aes(x=d1_sales_mil_log_mod, y=as.numeric(HyperGrowth))) +
   geom_point(size=0.1,  shape=20, stroke=2, fill=color[2], color=color[2]) +
   geom_smooth(method="loess", se=F, colour=color[1], size=1.5, span=0.9) +
-  labs(x = "Growth rate (Diff of ln sales)",y = "default") +
+  labs(x = "Growth rate (Diff of ln sales)",y = "HyperGrowth") +
   theme_bg() +
   scale_x_continuous(limits = c(-1.5,1.5), breaks = seq(-1.5,1.5, 0.5))
 d1sale_2
@@ -379,10 +389,14 @@ scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3, 1))
 d1sale_3
 save_fig("ch17-extra-3", output, "small")
 
+# N / % of Firms HyperGrowth
+table(df$HyperGrowth)
+prop.table(table(df$HyperGrowth))*100
 
 
 # check variables
 # datasummary_skim(data, type="numeric")
+
 
 write_csv(df,paste0(data_out,"bisnode_firms_clean.csv"))
 write_rds(df,paste0(data_out,"bisnode_firms_clean.rds"))
