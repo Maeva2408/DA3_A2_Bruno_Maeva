@@ -37,14 +37,16 @@ library(rpart.plot)
 
 
 # set working directory
-data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva"
+setwd("C:/Users/helme/Desktop/CEU/WINTER_Term/DA3")
+data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva")
+
 
 # load theme and functions
-source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/theme_bg.R")
-source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/da_helper_functions.R")
+source("da_case_studies/da_case_studies-0.7.0/ch00-tech-prep/theme_bg.R")
+source("da_case_studies/da_case_studies-0.7.0/ch00-tech-prep/da_helper_functions.R")
 
 data_in <- paste(data_dir,"data/clean/", sep = "/")
-output <- paste0(data_dir,"output/")
+output <- paste0(data_dir,"/output/")
 create_output_if_doesnt_exist(output)
 data_out <- paste(data_dir,"data/clean/", sep = "/")
 #-----------------------------------------------------------------------------------------

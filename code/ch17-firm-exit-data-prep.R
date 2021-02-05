@@ -11,6 +11,7 @@
 # CLEAR MEMORY
 rm(list=ls())
 
+
 # Import libraries
 library(haven)
 library(glmnet)
@@ -33,13 +34,14 @@ library(rpart)
 library(partykit)
 library(rpart.plot)
 
-
+getwd()
 # set working directory
-data_dir="C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/A2/DA3_A2_Bruno_Maeva"
+data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva/")
+SourceFunctions <- paste0(data_dir,"code/functions/")
 
 # load theme and functions
-source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/theme_bg.R")
-source("C:/Users/mbrae/OneDrive/Bureau/CEU/DA3/da_case_studies/ch00-tech-prep/da_helper_functions.R")
+source(paste0(SourceFunctions,"theme_bg.R"))
+source(paste0(SourceFunctions,"da_helper_functions.R"))
 
 data_in <- paste(data_dir,"data/clean/", sep = "/")
 output <- paste0(data_dir,"output/")
