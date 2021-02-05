@@ -142,7 +142,10 @@ After having design our sample, we end up with 15692 companies and 2220 of them 
 ```
 ## Feature engineering
 #MAEVa
-# log
+Now, We need to select our x variables and maybe transform them but before we need to clean them.
+- Some of the variable are financial accounts (like inventories, current liabilities, etc), so per se they can't be negative, thus we decided to replace the negative value to 0.
+
+
 
 ```{r, eval=TRUE, echo=FALSE, results='asis'}
 
@@ -162,7 +165,10 @@ After having design our sample, we end up with 15692 companies and 2220 of them 
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
 
 ```
-
+# variables - tables
+# Ratio EBITDA
+# Show RMSE
+# Choose the model
 
 
 
@@ -173,17 +179,20 @@ After having design our sample, we end up with 15692 companies and 2220 of them 
 
 ## Lasso
 
-
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
 
 
 ```
+# all variables
+# comparing lasso to the best logit
+
 
 ## Random forest
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
 
 ```
-
+# variable from our best logit model (take off the interaction)
+# models
 
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
 
