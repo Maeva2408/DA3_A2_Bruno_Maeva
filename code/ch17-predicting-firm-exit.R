@@ -42,8 +42,9 @@ data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva")
 
 
 # load theme and functions
-source("da_case_studies/da_case_studies-0.7.0/ch00-tech-prep/theme_bg.R")
-source("da_case_studies/da_case_studies-0.7.0/ch00-tech-prep/da_helper_functions.R")
+SourceFunctions <- paste0("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/code/functions/")
+source(paste0(SourceFunctions,"theme_bg.R"))
+source(paste0(SourceFunctions,"da_helper_functions.R"))
 
 data_in <- paste(data_dir,"data/clean/", sep = "/")
 output <- paste0(data_dir,"/output/")

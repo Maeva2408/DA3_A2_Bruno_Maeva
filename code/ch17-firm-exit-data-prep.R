@@ -34,10 +34,10 @@ library(rpart)
 library(partykit)
 library(rpart.plot)
 
-getwd()
+
 # set working directory
 data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva/")
-SourceFunctions <- paste0(data_dir,"code/functions/")
+SourceFunctions <- paste0("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/code/functions/")
 
 # load theme and functions
 source(paste0(SourceFunctions,"theme_bg.R"))
