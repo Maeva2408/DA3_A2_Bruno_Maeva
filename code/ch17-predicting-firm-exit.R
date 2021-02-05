@@ -33,7 +33,7 @@ library(ranger)
 library(rpart)
 library(partykit)
 library(rpart.plot)
-
+library(dplyr)
 
 
 # set working directory
@@ -69,61 +69,70 @@ datasummary_skim(data, type="categorical")
 # Define variable sets ----------------------------------------------
 # (making sure we use ind2_cat, which is a factor)
 
-rawvars <-  c("curr_assets", "curr_liab", "extra_exp", "extra_inc", "extra_profit_loss", "fixed_assets",
-              "inc_bef_tax", "intang_assets", "inventories", "liq_assets", "material_exp", "personnel_exp",
-              "profit_loss_year", "sales", "share_eq", "subscribed_cap")
-qualityvars <- c("balsheet_flag", "balsheet_length", "balsheet_notfullyear")
-engvar <- c("total_assets_bs", "fixed_assets_bs", "liq_assets_bs", "curr_assets_bs",
-            "share_eq_bs", "subscribed_cap_bs", "intang_assets_bs", "extra_exp_pl",
-            "extra_inc_pl", "extra_profit_loss_pl", "inc_bef_tax_pl", "inventories_pl",
-            "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl")
-engvar2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
-             "profit_loss_year_pl_quad", "share_eq_bs_quad")
-engvar3 <- c(grep("*flag_low$", names(data), value = TRUE),
-             grep("*flag_high$", names(data), value = TRUE),
-             grep("*flag_error$", names(data), value = TRUE),
-             grep("*flag_zero$", names(data), value = TRUE))
-d1 <-  c("d1_sales_mil_log_mod", "d1_sales_mil_log_mod_sq",
-         "flag_low_d1_sales_mil_log", "flag_high_d1_sales_mil_log")
-hr <- c("female", "ceo_age", "flag_high_ceo_age", "flag_low_ceo_age",
+firm <- c("age", "age2", "new", "ind2_cat", "m_region_loc", "urban_m")
+
+Fin1 <-  c("curr_assets", "curr_liab", "extra_exp", 
+           "extra_inc", "extra_profit_loss", "fixed_assets",
+           "inc_bef_tax", "intang_assets", "inventories", 
+           "liq_assets", "material_exp", "personnel_exp",
+           "profit_loss_year", "sales", "share_eq", "subscribed_cap",
+           "tang_assets","amort", "EBITDA")
+
+Fin2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
+          "profit_loss_year_pl_quad", "share_eq_bs_quad",
+          c(grep("*flag_low$", names(data), value = TRUE),
+            grep("*flag_high$", names(data), value = TRUE),
+            grep("*flag_error$", names(data), value = TRUE),
+            grep("*flag_zero$", names(data), value = TRUE)))
+
+Fin3 <- c("total_assets_bs", "fixed_assets_bs", "liq_assets_bs", "curr_assets_bs",
+          "share_eq_bs", "subscribed_cap_bs", "intang_assets_bs", "extra_exp_pl",
+          "extra_inc_pl", "extra_profit_loss_pl", "inc_bef_tax_pl", "inventories_pl",
+          "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl","working_capital_TO")
+
+Growth <-  data %>% select(matches("d1_")) %>% colnames()
+
+HR <- c("female", "ceo_age", "flag_high_ceo_age", "flag_low_ceo_age",
         "flag_miss_ceo_age", "ceo_count", "labor_avg_mod",
         "flag_miss_labor_avg", "foreign_management")
-firm <- c("age", "age2", "new", "ind2_cat", "m_region_loc", "urban_m")
+
+qualityvars <- c("balsheet_flag", "balsheet_length", "balsheet_notfullyear")
+
+data %>% select(-matches(c(firm,Fin1,Fin2,Fin3,Growth,HR,qualityvars))) %>% colnames()
 
 # interactions for logit, LASSO
 interactions1 <- c("ind2_cat*age", "ind2_cat*age2",
                    "ind2_cat*d1_sales_mil_log_mod", "ind2_cat*sales_mil_log",
                    "ind2_cat*ceo_age", "ind2_cat*foreign_management",
-                   "ind2_cat*female",   "ind2_cat*urban_m", "ind2_cat*labor_avg_mod")
+                   "ind2_cat*female",   "ind2_cat*urban_m", "ind2_cat*labor_avg_mod",
+                   paste0("int2_cat*", Growth))
+
 interactions2 <- c("sales_mil_log*age", "sales_mil_log*female",
                    "sales_mil_log*profit_loss_year_pl", "sales_mil_log*foreign_management")
 
-
 X1 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "ind2_cat")
-X2 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "fixed_assets_bs","share_eq_bs","curr_liab_bs ",   "curr_liab_bs_flag_high ", "curr_liab_bs_flag_error",  "age","foreign_management" , "ind2_cat")
-X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar,                   d1)
-X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars)
-X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars, interactions1, interactions2)
+X2 <- c(X1, "fixed_assets_bs","share_eq_bs","curr_liab_bs ",   "curr_liab_bs_flag_high ", 
+        "curr_liab_bs_flag_error",  "age","foreign_management" )
 
-# for LASSO
-logitvars <- c("sales_mil_log", "sales_mil_log_sq", engvar, engvar2, engvar3, d1, hr, firm, qualityvars, interactions1, interactions2)
+X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Growth)
+X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Fin2, Growth, HR, qualityvars)
+X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Fin2, Growth, HR, qualityvars, interactions1, interactions2)
 
-# for RF (no interactions, no modified features)
-rfvars  <-  c("sales_mil", "d1_sales_mil_log", rawvars, hr, firm, qualityvars)
-
+data[c(Fin1)]
+data[c(Fin3)]
 
 # Check simplest model X1
-ols_modelx1 <- lm(formula(paste0("default ~", paste0(X1, collapse = " + "))),
+ols_modelx1 <- lm(formula(paste0("HyperGrowth ~", paste0(X1, collapse = " + "))),
                 data = data)
 summary(ols_modelx1)
 
-glm_modelx1 <- glm(formula(paste0("default ~", paste0(X1, collapse = " + "))),
+glm_modelx1 <- glm(formula(paste0("HyperGrowth ~", paste0(X1, collapse = " + "))),
                    data = data, family = "binomial")
 summary(glm_modelx1)
 
 
 # Check model X2
-glm_modelx2 <- glm(formula(paste0("default ~", paste0(X2, collapse = " + "))),
+glm_modelx2 <- glm(formula(paste0("HyperGrowth ~", paste0(X2, collapse = " + "))),
                  data = data, family = "binomial")
 summary(glm_modelx2)
 
@@ -145,11 +154,11 @@ kable(x = sum_table, format = "latex", digits = 3,
 
 # baseline model is X4 (all vars, but no interactions) -------------------------------------------------------
 
-ols_model <- lm(formula(paste0("default ~", paste0(X4, collapse = " + "))),
+ols_model <- lm(formula(paste0("HyperGrowth ~", paste0(X4, collapse = " + "))),
                 data = data)
 summary(ols_model)
 
-glm_model <- glm(formula(paste0("default ~", paste0(X4, collapse = " + "))),
+glm_model <- glm(formula(paste0("HyperGrowth ~", paste0(X4, collapse = " + "))),
                  data = data, family = "binomial")
 summary(glm_model)
 
@@ -231,6 +240,8 @@ for (model_name in names(logit_model_vars)) {
 CV_RMSE_folds
 
 # Logit lasso -----------------------------------------------------------
+logitvars <- c("sales_mil_log", "sales_mil_log_sq", 
+               firm, Fin3, Fin2, Growth, HR, qualityvars, interactions1, interactions2)
 
 lambda <- 10^seq(-1, -4, length = 10)
 grid <- expand.grid("alpha" = 1, lambda = lambda)
@@ -519,27 +530,16 @@ cm3
 # RANDOM FOREST GRAPH EXAMPLE
 # -----------------------------------------------
 
-data_for_graph <- data_train
-levels(data_for_graph$default_f) <- list("stay" = "no_default", "exit" = "default")
-
-set.seed(13505)
-rf_for_graph <-
-  rpart(
-    formula = default_f ~ sales_mil + profit_loss_year+ foreign_management,
-    data = data_for_graph,
-    control = rpart.control(cp = 0.0028, minbucket = 100)
-  )
-
-rpart.plot(rf_for_graph, tweak=1, digits=2, extra=107, under = TRUE)
-save_tree_plot(rf_for_graph, "tree_plot", output, "small", tweak=1)
-
-
-
-
 #################################################
 # Probability forest
 # Split by gini, ratio of 1's in each tree, average over trees
 #################################################
+# for RF (no interactions, no modified features)
+# Variables from Best Logit-Model -> NO INTERACTIONS
+
+
+rfvars  <-  c("sales_mil", "d1_sales_mil_log", Fin1, HR, firm, qualityvars)
+
 
 # 5 fold cross-validation
 
@@ -650,8 +650,21 @@ holdout_treshold <- coords(roc_obj_holdout, x = best_tresholds[["rf_p"]] , input
 expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$default)
 expected_loss_holdout
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 #################################################
-# Classification forest
+# Plus One: Classification forest
 # Split by Gini, majority vote in each tree, majority vote over trees
 #################################################
 # Show expected loss with classification RF and default majority voting to compare

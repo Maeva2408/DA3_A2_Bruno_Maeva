@@ -171,20 +171,6 @@ df <- data %>%
 # Feature engineering
 ###########################################################
 
-# Log of % YOY change of BS vars 
-df <- df %>%
-  group_by(comp_id) %>%
-  mutate(d1_working_capital_TO_ln = log(d1_working_capital_TO),
-         d1_current_assets_ln     = log(d1_current_assets),
-         d1_current_liab_ln       = log(d1_current_liab),
-         d1_extra_profit_loss_ln  = log(d1_extra_profit_loss),
-         d1_fixed_assets_ln       = log(d1_fixed_assets),
-         d1_inventories_ln        = log(d1_inventories),
-         d1_tang_assets_ln        = log(d1_tang_assets),
-         d1_amort_ln              = log(d1_amort),
-         d1_EBITDA_ln             = log(d1_EBITDA)
-  ) %>%
-  ungroup()
 
 
 # change some industry category codes
@@ -216,7 +202,7 @@ df <- df %>%
 summary(df$total_assets_bs)
 
 pl_names <- c("extra_exp","extra_inc",  "extra_profit_loss", "inc_bef_tax" ,"inventories",
-              "material_exp", "profit_loss_year", "personnel_exp")
+              "material_exp", "profit_loss_year", "personnel_exp","EBITDA")
 bs_names <- c("intang_assets", "curr_liab", "fixed_assets", "liq_assets", "curr_assets",
               "share_eq", "subscribed_cap", "tang_assets" )
 
@@ -228,10 +214,36 @@ df <- df %>%
 df <- df %>%
   mutate_at(vars(bs_names), funs("bs"=ifelse(total_assets_bs == 0, 0, ./total_assets_bs)))
 
-
 ########################################################################
 # creating flags, and winsorizing tails
 ########################################################################
+
+#lapply(df %>% select(matches("^d1")) %>% colnames(), function(x) {
+#  df %>% ggplot(aes_string(x = x) ) +
+#    geom_point(aes(y = HyperGrowth)) +
+#    geom_smooth(aes(y = HyperGrowth),method = "loess")
+#})
+
+#df %>% select(matches("^d1")) %>% colnames()
+
+ggplot(data =  df, aes(x=d1_working_capital_TO, y=as.numeric(HyperGrowth))) +
+  geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
+  geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
+  labs(x = "Working Capital TO",y = "Hyp.Growth") +
+  theme_bg()
+
+as.numeric(df$HyperGrowth)
+
+ggplot(data =  df, aes(x=d1_current_assets, y=as.numeric(HyperGrowth))) +
+  geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
+#  geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
+  geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
+  ylim(1,2) +
+  labs(x = "Current_assets",y = "Hyp.Growth") +
+  theme_bg()
+
+
 
 # Variables that represent accounting items that cannot be negative (e.g. materials)
 zero <-  c("extra_exp_pl", "extra_inc_pl", "inventories_pl", "material_exp_pl", "personnel_exp_pl",
@@ -286,27 +298,15 @@ df <- df %>%
 # number emp, very noisy measure
 df <- df %>%
   mutate(labor_avg_mod = ifelse(is.na(labor_avg), mean(labor_avg, na.rm = TRUE), labor_avg),
-         flag_miss_labor_avg = as.numeric(is.na(labor_avg)))
-
-summary(df$labor_avg)
-summary(df$labor_avg_mod)
-
-df <- df %>%
+         flag_miss_labor_avg = as.numeric(is.na(labor_avg))) %>%
   select(-labor_avg)
 
 # create factors
 df <- df %>%
   mutate(urban_m = factor(urban_m, levels = c(1,2,3)),
-         ind2_cat = factor(ind2_cat, levels = sort(unique(df$ind2_cat))))
-
-df <- df %>%
-  mutate(default_f = factor(default, levels = c(0,1)) %>%
-           recode(., `0` = 'no_default', `1` = "default"))
-
-
-
-
-
+         ind2_cat = factor(ind2_cat, levels = sort(unique(df$ind2_cat)))) %>%
+  mutate(HyperGrowth_f = factor(HyperGrowth, levels = c(FALSE,TRUE)) %>%
+           recode(., `FALSE` = 'no_Hyp.Growth', `TRUE` = "Hyp.Growth"))
 
 ########################################################################
  # sales 
@@ -316,7 +316,7 @@ df <- df %>%
   mutate(sales_mil_log_sq=sales_mil_log^2)
 
 
-ggplot(data =  df, aes(x=sales_mil_log, y=as.numeric(default))) +
+ggplot(data =  df, aes(x=sales_mil_log, y=as.numeric(HyperGrowth))) +
   geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
   geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
   geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
