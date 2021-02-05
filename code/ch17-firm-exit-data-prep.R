@@ -54,7 +54,9 @@ data_out <- paste(data_dir,"data/clean/", sep = "/")
 # Import data
 ###########################################################
 
-data <- read_csv("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/data/clean/cs_bisnode_panel.csv")
+dataraw <- read_csv("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/data/clean/cs_bisnode_panel.csv")
+
+data <- dataraw
 
 
 # drop variables with many NAs
@@ -80,15 +82,21 @@ data  <- data %>%
 data <- data %>%
   group_by(comp_id) %>%
   mutate(default = ((status_alive == 1) & (lead(status_alive, 2) == 0)) %>%
-           as.numeric(.)) %>%
+           as.numeric(.),
+         CAGR = ifelse( ( (is.na(lead(sales, 2))) & (status_alive == 1) ),
+                             0,((lead(sales, 2) / sales )^(1/2) - 1)*100) ) %>%
   ungroup()
 
-
+data <- data %>% mutate(
+  HyperGrowth = CAGR >= 30)
 
 data <- data %>%
   filter(year <=2013)
 
 Hmisc::describe(data$default)
+
+
+
 
 # Size and growth
 summary(data$sales) # There will be NAs, we'll drop them soon
@@ -120,31 +128,43 @@ data <- data %>%
 ###########################################################
  # sample design
 ###########################################################
+data[ data$comp_id == 1015769152 , ][c("year","sales","CAGR")]
+
 
 # look at cross section
-data <- data %>%
-  filter((year == 2012) & (status_alive == 1)) %>%
-  # look at firms below 10m euro revenues and above 1000 euros
+df <- data %>%
+  filter((year == 2012) & (status_alive == 1)) %>% 
+  #  filter((year == 2012) & (status_alive == 1)) %>%
+  # look at firms below 10m euro revenues and above 10000 euros
   filter(!(sales_mil > 10)) %>%
-  filter(!(sales_mil < 0.001))
+  filter(!(sales_mil < 0.01)) %>% 
+  filter(!(is.na(HyperGrowth)))
 
-Hmisc::describe(data$default)
+
+
+
+prop.table(table(df$HyperGrowth,df$year),2)
+
+nrow(df)
+
+Hmisc::describe(df$default)
+
+
 
 ###########################################################
 # Feature engineering
 ###########################################################
 
 # change some industry category codes
-data <- data %>%
+df <- df %>%
   mutate(ind2_cat = ind2 %>%
            ifelse(. > 56, 60, .)  %>%
            ifelse(. < 26, 20, .) %>%
            ifelse(. < 55 & . > 35, 40, .) %>%
            ifelse(. == 31, 30, .) %>%
-           ifelse(is.na(.), 99, .)
-           )
+           ifelse(is.na(.), 99, .))
 
-table(data$ind2_cat)
+table(df$ind2_cat)
 
 # Firm characteristics
 data <- data %>%
