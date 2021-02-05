@@ -88,10 +88,18 @@ data <- data %>%
   ungroup()
 
 data <- data %>% mutate(
-  HyperGrowth = CAGR >= 30)
-
-data <- data %>%
+  HyperGrowth = CAGR >= 30) %>% 
   filter(year <=2013)
+
+
+
+
+
+
+
+
+
+check <- data[ data$comp_id == 1015769152 , ]
 
 Hmisc::describe(data$default)
 
@@ -128,7 +136,7 @@ data <- data %>%
 ###########################################################
  # sample design
 ###########################################################
-data[ data$comp_id == 1015769152 , ][c("year","sales","CAGR")]
+
 
 
 # look at cross section
