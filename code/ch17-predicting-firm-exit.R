@@ -76,7 +76,7 @@ Fin1 <-  c("curr_assets", "curr_liab", "extra_exp",
            "inc_bef_tax", "intang_assets", "inventories", 
            "liq_assets", "material_exp", "personnel_exp",
            "profit_loss_year", "sales", "share_eq", "subscribed_cap",
-           "tang_assets","amort", "EBITDA","working_capital_TO")
+           "tang_assets","amort", "EBITDA")
 
 Fin2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
           "profit_loss_year_pl_quad", "share_eq_bs_quad",
@@ -88,7 +88,7 @@ Fin2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
 Fin3 <- c("total_assets_bs", "fixed_assets_bs", "liq_assets_bs", "curr_assets_bs",
           "share_eq_bs", "subscribed_cap_bs", "intang_assets_bs", "extra_exp_pl",
           "extra_inc_pl", "extra_profit_loss_pl", "inc_bef_tax_pl", "inventories_pl",
-          "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl")
+          "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl","working_capital_TO")
 
 Growth <-  data %>% select(matches("d1_")) %>% colnames()
 
