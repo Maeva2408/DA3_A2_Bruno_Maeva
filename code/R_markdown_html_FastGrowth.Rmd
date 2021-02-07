@@ -144,6 +144,10 @@ After having design our sample, we end up with 15692 companies and 2220 of them 
 #MAEVa
 Now, We need to select our x variables and maybe transform them but before we need to clean them.
 - Some of the variable are financial accounts (like inventories, current liabilities, etc), so per se they can't be negative, thus we decided to replace the negative value to 0.
+- We created ratios , easier for interpretation and spotting extrem values
+- we used the a method called winsorization 
+- We elevated some variable to a quadratic function
+- We took the log of sales.
 
 
 
@@ -151,7 +155,8 @@ Now, We need to select our x variables and maybe transform them but before we ne
 
 ```
 ## Interaction
-# Same as class + D1 industrie categorie * growth
+# Same as class 
+We lookzd for interaction
 
 ```{r, eval=TRUE, echo=FALSE, results='asis'}
 
