@@ -84,7 +84,7 @@ data <- data %>% group_by(comp_id) %>%
   ungroup()
 
 data <- data %>% mutate(
-  HyperGrowth = ifelse(CAGR >= 30, 1,0)) %>% 
+  HyperGrowth = ifelse(CAGR >= 25, 1,0)) %>% 
   filter(year <=2013)
 
 # Size and growth
@@ -386,6 +386,17 @@ d1sale_3<-ggplot(data = df, aes(x=d1_sales_mil_log, y=d1_sales_mil_log_mod)) +
 scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3, 1))
 d1sale_3
 save_fig("ch17-extra-3", output, "small")
+
+df$d1_total_assets_bs
+d1Assets<-ggplot(data = df, aes(x=d1_total_assets_bs  , y=d1_total_assets_bs_mod)) +
+  geom_point(size=0.1,  shape=20, stroke=2, fill=color[2], color=color[2]) +
+  labs(x = "Assets Growth w.r.t. Sales (original)",y = "Assets Growth w.r.t. Sales(winsorized)") +
+  theme_bg() #+
+#  scale_x_continuous(limits = c(-5,5), breaks = seq(-5,5, 1)) +
+#  scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3, 1))
+d1Assets
+save_fig("ch17-extra-3", output, "small")
+
 
 # N / % of Firms HyperGrowth
 table(df$HyperGrowth)

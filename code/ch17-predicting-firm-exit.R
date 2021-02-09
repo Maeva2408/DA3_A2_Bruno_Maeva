@@ -60,12 +60,6 @@ data_out <- paste(data_dir,"data/clean/", sep = "/")
 url <- "https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/data/clean/bisnode_firms_clean.rds"
 data <- readRDS(url(url, method="libcurl"))
 
-
-#summary
-datasummary_skim(data, type='numeric', histogram = TRUE)
-datasummary_skim(data, type="categorical")
-
-
 # Define variable sets ----------------------------------------------
 # (making sure we use ind2_cat, which is a factor)
 
@@ -88,11 +82,12 @@ Fin2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
 Fin3 <- c("total_assets_bs", "fixed_assets_bs", "liq_assets_bs", "curr_assets_bs",
           "share_eq_bs", "subscribed_cap_bs", "intang_assets_bs", "extra_exp_pl",
           "extra_inc_pl", "extra_profit_loss_pl", "inc_bef_tax_pl", "inventories_pl",
-          "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl","working_capital_TO")
+          "material_exp_pl", "profit_loss_year_pl", "personnel_exp_pl","working_capital_TO",
+          "EBITDA_pl")
 
-Growth <-  data %>% select(matches("d1_")) %>% colnames()
+Growth <- data %>% select(matches("^d1_")) %>% select(-matches(Fin2))%>% colnames()
 
-HR <- c("female", "ceo_age", "flag_high_ceo_age", "flag_low_ceo_age",
+HR <- c("ceo_age", "ceo_young","flag_high_ceo_age", "flag_low_ceo_age",
         "flag_miss_ceo_age", "ceo_count", "labor_avg_mod",
         "flag_miss_labor_avg", "foreign_management")
 
@@ -100,12 +95,13 @@ qualityvars <- c("balsheet_flag", "balsheet_length", "balsheet_notfullyear")
 
 data %>% select(-matches(c(firm,Fin1,Fin2,Fin3,Growth,HR,qualityvars))) %>% colnames()
 
+
 # interactions for logit, LASSO
 interactions1 <- c("ind2_cat*age", "ind2_cat*age2",
                    "ind2_cat*d1_sales_mil_log_mod", "ind2_cat*sales_mil_log",
                    "ind2_cat*ceo_age", "ind2_cat*foreign_management",
                    "ind2_cat*female",   "ind2_cat*urban_m", "ind2_cat*labor_avg_mod",
-                   paste0("int2_cat*", Growth))
+                   paste0("ind2_cat*", Growth))
 
 interactions2 <- c("sales_mil_log*age", "sales_mil_log*female",
                    "sales_mil_log*profit_loss_year_pl", "sales_mil_log*foreign_management")
@@ -114,87 +110,23 @@ X1 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_los
 X2 <- c(X1, "fixed_assets_bs","share_eq_bs","curr_liab_bs ",   "curr_liab_bs_flag_high ", 
         "curr_liab_bs_flag_error",  "age","foreign_management" )
 
-X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Growth)
-X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Fin2, Growth, HR, qualityvars)
-X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin3, Fin2, Growth, HR, qualityvars, interactions1, interactions2)
-
-data[c(Fin1)]
-data[c(Fin3)]
-
-# Check simplest model X1
-ols_modelx1 <- lm(formula(paste0("HyperGrowth ~", paste0(X1, collapse = " + "))),
-                data = data)
-summary(ols_modelx1)
-
-glm_modelx1 <- glm(formula(paste0("HyperGrowth ~", paste0(X1, collapse = " + "))),
-                   data = data, family = "binomial")
-summary(glm_modelx1)
-
-
-# Check model X2
-glm_modelx2 <- glm(formula(paste0("HyperGrowth ~", paste0(X2, collapse = " + "))),
-                 data = data, family = "binomial")
-summary(glm_modelx2)
-
-#calculate average marginal effects (dy/dx) for logit
-mx2 <- margins(glm_modelx2)
-
-sum_table <- summary(glm_modelx2) %>%
-  coef() %>%
-  as.data.frame() %>%
-  select(Estimate) %>%
-  mutate(factor = row.names(.)) %>%
-  merge(summary(mx2)[,c("factor","AME")])
-
-kable(x = sum_table, format = "latex", digits = 3,
-      col.names = c("Variable", "Coefficient", "dx/dy"),
-      caption = "Average Marginal Effects (dy/dx) for Logit Model") %>%
-  cat(.,file= paste0(output,"AME_logit_X2.tex"))
-
-
-# baseline model is X4 (all vars, but no interactions) -------------------------------------------------------
-
-ols_model <- lm(formula(paste0("HyperGrowth ~", paste0(X4, collapse = " + "))),
-                data = data)
-summary(ols_model)
-
-glm_model <- glm(formula(paste0("HyperGrowth ~", paste0(X4, collapse = " + "))),
-                 data = data, family = "binomial")
-summary(glm_model)
-
-#calculate average marginal effects (dy/dx) for logit
-# vce="none" makes it run much faster, here we do not need variances
-
-m <- margins(glm_model, vce = "none")
-
-sum_table2 <- summary(glm_model) %>%
-  coef() %>%
-  as.data.frame() %>%
-  select(Estimate, `Std. Error`) %>%
-  mutate(factor = row.names(.)) %>%
-  merge(summary(m)[,c("factor","AME")])
-
-kable(x = sum_table2, format = "latex", digits = 3,
-      col.names = c("Variable", "Coefficient", "SE", "dx/dy"),
-      caption = "Average Marginal Effects (dy/dx) for Logit Model") %>%
-  cat(.,file= paste0(output,"AME_logit_X4.tex"))
-
+X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin1, Fin3, Growth)
+X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin1, Fin3, Growth, HR, qualityvars, Fin2)
+X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin1, Fin3, Growth, HR, qualityvars, Fin2, interactions1, interactions2)
 
 # separate datasets -------------------------------------------------------
 
 set.seed(13505)
-
-train_indices <- as.integer(createDataPartition(data$default, p = 0.8, list = FALSE))
+train_indices <- as.integer(createDataPartition(data$HyperGrowth, p = 0.8, list = FALSE))
 data_train <- data[train_indices, ]
 data_holdout <- data[-train_indices, ]
 
 dim(data_train)
 dim(data_holdout)
 
-Hmisc::describe(data$default_f)
-Hmisc::describe(data_train$default_f)
-Hmisc::describe(data_holdout
-                $default_f)
+Hmisc::describe(data$HyperGrowth_f)
+Hmisc::describe(data_train$HyperGrowth_f)
+Hmisc::describe(data_holdout$HyperGrowth_f)
 
 #######################################################x
 # PART I PREDICT PROBABILITIES
@@ -217,14 +149,15 @@ logit_model_vars <- list("X1" = X1, "X2" = X2, "X3" = X3, "X4" = X4, "X5" = X5)
 
 CV_RMSE_folds <- list()
 logit_models <- list()
-
+data$HyperGrowth_f <- factor( data$HyperGrowth_f, levels = c("no_Hyp.Growth","Hyp.Growth"), 
+        labels = c("no_Hyp.Growth" = 0,"Hyp.Growth" = 1))
 for (model_name in names(logit_model_vars)) {
 
   features <- logit_model_vars[[model_name]]
 
   set.seed(13505)
   glm_model <- train(
-    formula(paste0("default_f ~", paste0(features, collapse = " + "))),
+    formula(paste0("HyperGrowth_f ~", paste0(features, collapse = " + "))),
     method = "glm",
     data = data_train,
     family = binomial,
@@ -238,6 +171,7 @@ for (model_name in names(logit_model_vars)) {
 }
 
 CV_RMSE_folds
+logit_models
 
 # Logit lasso -----------------------------------------------------------
 logitvars <- c("sales_mil_log", "sales_mil_log_sq", 
@@ -249,7 +183,7 @@ grid <- expand.grid("alpha" = 1, lambda = lambda)
 set.seed(13505)
 system.time({
   logit_lasso_model <- train(
-    formula(paste0("default_f ~", paste0(logitvars, collapse = " + "))),
+    formula(paste0("HyperGrowth_f ~", paste0(logitvars, collapse = " + "))),
     data = data_train,
     method = "glmnet",
     preProcess = c("center", "scale"),
@@ -269,47 +203,108 @@ write.csv(lasso_coeffs, paste0(output, "lasso_logit_coeffs.csv"))
 CV_RMSE_folds[["LASSO"]] <- logit_lasso_model$resample[,c("Resample", "RMSE")]
 CV_RMSE_folds[["LASSO"]]
 
-#############################################x
-# PART I
-# No loss fn
-########################################
 
+logit_models
+CV_RMSE_folds
+
+# Random Probability Forest --------------------------------------
+
+#################################################
+# Probability forest
+# Split by gini, ratio of 1's in each tree, average over trees
+#################################################
+# for RF (no interactions, no modified features)
+# Variables from Best Logit-Model -> NO INTERACTIONS
+
+#mean(CV_RMSE_folds[[1]][,2])
+
+rbindlist(lapply(1:6,function(x) {
+  tl <- list()
+  tl[['mean']] <- mean(CV_RMSE_folds[[x]][,2])
+  return(tl)
+}))
+
+library(data.table)
+
+rfvars  <-  X4
+#rfvars  <-  c("sales_mil", "d1_sales_mil_log", Fin1, HR, firm, qualityvars)
+
+
+# 5 fold cross-validation
+
+train_control <- trainControl(
+  method = "cv",
+  n = 5,
+  classProbs = TRUE, # same as probability = TRUE in ranger
+  summaryFunction = twoClassSummaryExtended,
+  savePredictions = TRUE
+)
+train_control$verboseIter <- TRUE
+
+length(X4)
+
+tune_grid <- expand.grid(
+  .mtry = c( 9, 10, 11),
+  .splitrule = "gini",
+  .min.node.size = c(10, 15)
+)
+
+# getModelInfo("ranger")
+set.seed(13505)
+rf_model_p <- train(
+  formula(paste0("HyperGrowth_f ~ ", paste0(rfvars , collapse = " + "))),
+  method = "ranger",
+  data = data_train,
+  tuneGrid = tune_grid,
+  trControl = train_control
+)
+
+rf_model_p$results
+
+best_mtry <- rf_model_p$bestTune$mtry
+best_min_node_size <- rf_model_p$bestTune$min.node.size
+logit_models[["RandForest"]] <- rf_model_p
+CV_RMSE_folds[["RandForest"]] <- rf_model_p$resample[,c("Resample", "RMSE")]
+
+# Get average (ie over the folds) RMSE and AUC ------------------------------------
+
+# AUC
 # Draw ROC Curve and calculate AUC for each folds --------------------------------
 CV_AUC_folds <- list()
 
 for (model_name in names(logit_models)) {
-
+  
   auc <- list()
   model <- logit_models[[model_name]]
   for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
     cv_fold <-
       model$pred %>%
       filter(Resample == fold)
-
-    roc_obj <- roc(cv_fold$obs, cv_fold$default)
+    
+    roc_obj <- roc(cv_fold$obs, cv_fold$Hyp.Growth)
     auc[[fold]] <- as.numeric(roc_obj$auc)
   }
-
   CV_AUC_folds[[model_name]] <- data.frame("Resample" = names(auc),
-                                              "AUC" = unlist(auc))
+                                           "AUC" = unlist(auc))
 }
 
 CV_AUC_folds
+CV_RMSE_folds
 
 # For each model: average RMSE and average AUC for models ----------------------------------
-
 CV_RMSE <- list()
 CV_AUC <- list()
-
 for (model_name in names(logit_models)) {
   CV_RMSE[[model_name]] <- mean(CV_RMSE_folds[[model_name]]$RMSE)
   CV_AUC[[model_name]] <- mean(CV_AUC_folds[[model_name]]$AUC)
 }
-
 CV_RMSE
 CV_AUC 
-# We have 6 models, (5 logit and the logit lasso). For each we have a 5-CV RMSE and AUC.
-# We pick our preferred model based on that. -----------------------------------------------
+
+# Model Selection ---------------------------------
+
+# 7 models, (5 logit , 1-1 logit LASSO & RF). For each we have a 5-CV RMSE and AUC.
+# Nice Summary Table -------------------
 
 nvars <- lapply(logit_models, FUN = function(x) length(x$coefnames))
 nvars[["LASSO"]] <- sum(lasso_coeffs != 0)
@@ -318,17 +313,13 @@ logit_summary1 <- data.frame("Number of predictors" = unlist(nvars),
                              "CV RMSE" = unlist(CV_RMSE),
                              "CV AUC" = unlist(CV_AUC))
 
-kable(x = logit_summary1, format = "latex", booktabs=TRUE,  digits = 3, row.names = TRUE,
-      linesep = "", col.names = c("Number of predictors","CV RMSE","CV AUC")) %>%
-  cat(.,file= paste0(output, "logit_summary1.tex"))
-
 # Take best model and estimate RMSE on holdout  -------------------------------------------
 
-best_logit_no_loss <- logit_models[["X4"]]
+best_logit_no_loss <- logit_models[["RandForest"]]
 
 logit_predicted_probabilities_holdout <- predict(best_logit_no_loss, newdata = data_holdout, type = "prob")
-data_holdout[,"best_logit_no_loss_pred"] <- logit_predicted_probabilities_holdout[,"default"]
-RMSE(data_holdout[, "best_logit_no_loss_pred", drop=TRUE], data_holdout$default)
+data_holdout[,"best_logit_no_loss_pred"] <- logit_predicted_probabilities_holdout[,"Hyp.Growth"]
+RMSE(data_holdout[, "best_logit_no_loss_pred", drop=TRUE], data_holdout$HyperGrowth)
 
 # discrete ROC (with thresholds in steps) on holdout -------------------------------------------------
 thresholds <- seq(0.05, 0.75, by = 0.05)
@@ -371,7 +362,7 @@ save_fig("ch17-figure-2a-roc-discrete", output, "small")
 
 # continuous ROC on holdout with best model (Logit 4) -------------------------------------------
 
-roc_obj_holdout <- roc(data_holdout$default, data_holdout$best_logit_no_loss_pred)
+roc_obj_holdout <- roc(data_holdout$HyperGrowth_f, data_holdout$best_logit_with_loss_pred)
 
 createRocPlot(roc_obj_holdout, "best_logit_no_loss_roc_plot_holdout")
 
@@ -415,8 +406,8 @@ cm2
 # Calibration curve -----------------------------------------------------------
 # how well do estimated vs actual event probabilities relate to each other?
 
-
-create_calibration_plot(data_holdout, 
+#data_holdout$best_logit_with_loss_pred
+  create_calibration_plot(data_holdout, 
   file_name = "ch17-figure-1-logit-m4-calibration", 
   prob_var = "best_logit_no_loss_pred", 
   actual_var = "default",
@@ -426,15 +417,33 @@ create_calibration_plot(data_holdout,
 #############################################x
 # PART II.
 # We have a loss function
-########################################
+################### W LOSS FUNCTION #####################
 
-# Introduce loss function
+# Introduce loss function ------------------
 # relative cost of of a false negative classification (as compared with a false positive classification)
-FP=1
-FN=10
-cost = FN/FP
+ # False Positive: 
+    # We invest but should not have -> 20% to loss capital & did not invest in correct firm = -2.2
+ # False Negative: 
+    # We dont invest but we should have -> we dont triple our money =
+ # Scale it to whole numbers -> 10-11
+FP=3  
+FN=5 
+cost <- FN/FP
+
+# CAGR for Hypergrowth companies -> triple in size in 2 years 
+data[data$HyperGrowth == 1,] %>% summarize(AvgCAGR = round(mean(CAGR),2))
+
+# CAGR for Non-Hypergrowth companies -> 
+  #   No default -> no loss no gain
+  #   Default   -> all money lost - ca. 20% among no hypergrowth firms
+data[(data$HyperGrowth == 0) && (data$default == 0),] %>% summarize(AvgCAGR = round(mean(CAGR),2))
+prop.table(table(data$default,data$HyperGrowth),2)
+  # this would mean O * 0.8 - 1 * 0.2 = -0.2
+    # we also could have used our money else where -> to triple it by giving it to hypergrowth firm so:
+  # 0 * 0.8 - 1 * 0.2 - 2 = -2.2
+
 # the prevalence, or the proportion of cases in the population (n.cases/(n.controls+n.cases))
-prevelance = sum(data_train$default)/length(data_train$default)
+prevelance = sum(data_train$HyperGrowth_f == "Hyp.Growth")/length(data_train$HyperGrowth_f)
 
 # Draw ROC Curve and find optimal threshold with loss function --------------------------
 
@@ -444,29 +453,30 @@ logit_cv_rocs <- list()
 logit_cv_threshold <- list()
 logit_cv_expected_loss <- list()
 
-for (model_name in names(logit_models)) {
+#model_name <- "LASSO"
 
+for (model_name in names(logit_models)) {
   model <- logit_models[[model_name]]
   colname <- paste0(model_name,"_prediction")
-
   best_tresholds_cv <- list()
   expected_loss_cv <- list()
 
+#  fold <- "Fold5"
   for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
     cv_fold <-
       model$pred %>%
       filter(Resample == fold)
 
-    roc_obj <- roc(cv_fold$obs, cv_fold$default)
+    roc_obj <- roc(cv_fold$obs, cv_fold$Hyp.Growth)
     best_treshold <- coords(roc_obj, "best", ret="all", transpose = FALSE,
                             best.method="youden", best.weights=c(cost, prevelance))
     best_tresholds_cv[[fold]] <- best_treshold$threshold
-    expected_loss_cv[[fold]] <- (best_treshold$fp*FP + best_treshold$fn*FN)/length(cv_fold$default)
+    expected_loss_cv[[fold]] <- (best_treshold$fp*FP + best_treshold$fn*FN)/length(cv_fold$Hyp.Growth)
   }
 
   # average
-  best_tresholds[[model_name]] <- mean(unlist(best_tresholds_cv))
-  expected_loss[[model_name]] <- mean(unlist(expected_loss_cv))
+  best_tresholds[[model_name]] <- mean(unlist(best_tresholds_cv)[is.finite(unlist(best_tresholds_cv)) == T])
+  expected_loss[[model_name]] <- mean(unlist(expected_loss_cv)[is.finite(unlist(expected_loss_cv)) == T])
 
   # for fold #5
   logit_cv_rocs[[model_name]] <- roc_obj
@@ -485,7 +495,7 @@ kable(x = logit_summary2, format = "latex", booktabs=TRUE,  digits = 3, row.name
                                   "Avg expected loss","Expected loss for fold #5")) %>%
   cat(.,file= paste0(output, "logit_summary1.tex"))
 
-# Create plots based on Fold5 in CV ----------------------------------------------
+# ROC / AUC visuals  - Create plots based on Fold5 in CV ----------------------------------------------
 
 for (model_name in names(logit_cv_rocs)) {
 
@@ -499,11 +509,11 @@ for (model_name in names(logit_cv_rocs)) {
 
 # Pick best model based on average expected loss ----------------------------------
 
-best_logit_with_loss <- logit_models[["X4"]]
-best_logit_optimal_treshold <- best_tresholds[["X4"]]
+best_logit_with_loss <- logit_models[["X3"]]
+best_logit_optimal_treshold <- best_tresholds[["X3"]]
 
 logit_predicted_probabilities_holdout <- predict(best_logit_with_loss, newdata = data_holdout, type = "prob")
-data_holdout[,"best_logit_with_loss_pred"] <- logit_predicted_probabilities_holdout[,"default"]
+data_holdout[,"best_logit_with_loss_pred"] <- logit_predicted_probabilities_holdout[,"Hyp.Growth"]
 
 # ROC curve on holdout
 roc_obj_holdout <- roc(data_holdout$default, data_holdout[, "best_logit_with_loss_pred", drop=TRUE])
@@ -511,191 +521,39 @@ roc_obj_holdout <- roc(data_holdout$default, data_holdout[, "best_logit_with_los
 # Get expected loss on holdout
 holdout_treshold <- coords(roc_obj_holdout, x = best_logit_optimal_treshold, input= "threshold",
                            ret="all", transpose = FALSE)
-expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$default)
+expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$HyperGrowth)
 expected_loss_holdout
 
+
+hist(data_holdout$best_logit_with_loss_pred)
+
 # Confusion table on holdout with optimal threshold
-holdout_prediction <-
-  ifelse(data_holdout$best_logit_with_loss_pred < best_logit_optimal_treshold, "no_default", "default") %>%
-  factor(levels = c("no_default", "default"))
-cm_object3 <- confusionMatrix(holdout_prediction,data_holdout$default_f)
+data_holdout$holdout_prediction <-
+  ifelse(data_holdout$best_logit_with_loss_pred < best_logit_optimal_treshold, "no_Hyp.Growth", "Hyp.Growth") %>%
+  factor(levels = c("no_Hyp.Growth", "Hyp.Growth"))
+cm_object3 <- confusionMatrix(data_holdout$holdout_prediction,data_holdout$HyperGrowth_f)
 cm3 <- cm_object3$table
 cm3
 
-#################################################
-# PREDICTION WITH RANDOM FOREST
-#################################################
+# Average Growth among invested companies
+data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
+  summarize(AvgAnnGrowth = mean(CAGR))
 
-# -----------------------------------------------
-# RANDOM FOREST GRAPH EXAMPLE
-# -----------------------------------------------
-
-#################################################
-# Probability forest
-# Split by gini, ratio of 1's in each tree, average over trees
-#################################################
-# for RF (no interactions, no modified features)
-# Variables from Best Logit-Model -> NO INTERACTIONS
+# Loss
+120000  - (12 * 10000 * (1 - 0.22)^2)
+# Win 
+120000 + (12 * 10000 * (1+ 1.04)^2)
 
 
-rfvars  <-  c("sales_mil", "d1_sales_mil_log", Fin1, HR, firm, qualityvars)
+table(data_holdout$ind)
 
 
-# 5 fold cross-validation
-
-train_control <- trainControl(
-  method = "cv",
-  n = 5,
-  classProbs = TRUE, # same as probability = TRUE in ranger
-  summaryFunction = twoClassSummaryExtended,
-  savePredictions = TRUE
-)
-train_control$verboseIter <- TRUE
-
-tune_grid <- expand.grid(
-  .mtry = c(5, 6, 7),
-  .splitrule = "gini",
-  .min.node.size = c(10, 15)
-)
-
-# getModelInfo("ranger")
-set.seed(13505)
-rf_model_p <- train(
-  formula(paste0("default_f ~ ", paste0(rfvars , collapse = " + "))),
-  method = "ranger",
-  data = data_train,
-  tuneGrid = tune_grid,
-  trControl = train_control
-)
-
-rf_model_p$results
-
-best_mtry <- rf_model_p$bestTune$mtry
-best_min_node_size <- rf_model_p$bestTune$min.node.size
-
-# Get average (ie over the folds) RMSE and AUC ------------------------------------
-CV_RMSE_folds[["rf_p"]] <- rf_model_p$resample[,c("Resample", "RMSE")]
-
-auc <- list()
-for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
-  cv_fold <-
-    rf_model_p$pred %>%
-    filter(Resample == fold)
-
-  roc_obj <- roc(cv_fold$obs, cv_fold$default)
-  auc[[fold]] <- as.numeric(roc_obj$auc)
-}
-CV_AUC_folds[["rf_p"]] <- data.frame("Resample" = names(auc),
-                                         "AUC" = unlist(auc))
-
-CV_RMSE[["rf_p"]] <- mean(CV_RMSE_folds[["rf_p"]]$RMSE)
-CV_AUC[["rf_p"]] <- mean(CV_AUC_folds[["rf_p"]]$AUC)
-
-# Now use loss function and search for best thresholds and expected loss over folds -----
-best_tresholds_cv <- list()
-expected_loss_cv <- list()
-
-for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
-  cv_fold <-
-    rf_model_p$pred %>%
-    filter(mtry == best_mtry,
-           min.node.size == best_min_node_size,
-           Resample == fold)
-
-  roc_obj <- roc(cv_fold$obs, cv_fold$default)
-  best_treshold <- coords(roc_obj, "best", ret="all", transpose = FALSE,
-                          best.method="youden", best.weights=c(cost, prevelance))
-  best_tresholds_cv[[fold]] <- best_treshold$threshold
-  expected_loss_cv[[fold]] <- (best_treshold$fp*FP + best_treshold$fn*FN)/length(cv_fold$default)
-}
-
-# average
-best_tresholds[["rf_p"]] <- mean(unlist(best_tresholds_cv))
-expected_loss[["rf_p"]] <- mean(unlist(expected_loss_cv))
-
-
-rf_summary <- data.frame("CV RMSE" = CV_RMSE[["rf_p"]],
-                         "CV AUC" = CV_AUC[["rf_p"]],
-                         "Avg of optimal thresholds" = best_tresholds[["rf_p"]],
-                         "Threshold for Fold5" = best_treshold$threshold,
-                         "Avg expected loss" = expected_loss[["rf_p"]],
-                         "Expected loss for Fold5" = expected_loss_cv[[fold]])
-
-kable(x = rf_summary, format = "latex", booktabs=TRUE,  digits = 3, row.names = TRUE,
-      linesep = "", col.names = c("CV RMSE", "CV AUC",
-                                  "Avg of optimal thresholds","Threshold for fold #5",
-                                  "Avg expected loss","Expected loss for fold #5")) %>%
-  cat(.,file= paste0(output, "rf_summary.tex"))
-
-# Create plots - this is for Fold5
-
-createLossPlot(roc_obj, best_treshold, "rf_p_loss_plot")
-createRocPlotWithOptimal(roc_obj, best_treshold, "rf_p_roc_plot")
-
-# Take model to holdout and estimate RMSE, AUC and expected loss ------------------------------------
-
-rf_predicted_probabilities_holdout <- predict(rf_model_p, newdata = data_holdout, type = "prob")
-data_holdout$rf_p_prediction <- rf_predicted_probabilities_holdout[,"default"]
-RMSE(data_holdout$rf_p_prediction, data_holdout$default)
-
-# ROC curve on holdout
-roc_obj_holdout <- roc(data_holdout$default, data_holdout[, "rf_p_prediction", drop=TRUE])
-
-# AUC
-as.numeric(roc_obj_holdout$auc)
-
-# Get expected loss on holdout with optimal threshold
-holdout_treshold <- coords(roc_obj_holdout, x = best_tresholds[["rf_p"]] , input= "threshold",
-                           ret="all", transpose = FALSE)
-expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$default)
-expected_loss_holdout
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#################################################
-# Plus One: Classification forest
-# Split by Gini, majority vote in each tree, majority vote over trees
-#################################################
-# Show expected loss with classification RF and default majority voting to compare
-
-train_control <- trainControl(
-  method = "cv",
-  n = 5
-)
-train_control$verboseIter <- TRUE
-
-set.seed(13505)
-rf_model_f <- train(
-  formula(paste0("default_f ~ ", paste0(rfvars , collapse = " + "))),
-  method = "ranger",
-  data = data_train,
-  tuneGrid = tune_grid,
-  trControl = train_control
-)
-
-data_train$rf_f_prediction_class <-  predict(rf_model_f,type = "raw")
-data_holdout$rf_f_prediction_class <- predict(rf_model_f, newdata = data_holdout, type = "raw")
-
-#We use predicted classes to calculate expected loss based on our loss fn
-fp <- sum(data_holdout$rf_f_prediction_class == "default" & data_holdout$default_f == "no_default")
-fn <- sum(data_holdout$rf_f_prediction_class == "no_default" & data_holdout$default_f == "default")
-(fp*FP + fn*FN)/length(data_holdout$default)
-
+data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
+  group_by(HyperGrowth_f,ind2) %>% 
+  summarize(AvgAnnGrowth = mean(CAGR),
+            Nr_Investments = n())
 
 # Summary results ---------------------------------------------------
-
-nvars[["rf_p"]] <- length(rfvars)
 
 summary_results <- data.frame("Number of predictors" = unlist(nvars),
                               "CV RMSE" = unlist(CV_RMSE),
