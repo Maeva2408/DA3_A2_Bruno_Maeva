@@ -509,18 +509,19 @@ for (model_name in names(logit_cv_rocs)) {
 
 # Pick best model based on average expected loss ----------------------------------
 
-best_logit_with_loss <- logit_models[["X3"]]
-best_logit_optimal_treshold <- best_tresholds[["X3"]]
+best_logit_with_loss <- logit_models[["X4"]]
+best_logit_optimal_treshold <- best_tresholds[["X4"]]
 
 logit_predicted_probabilities_holdout <- predict(best_logit_with_loss, newdata = data_holdout, type = "prob")
 data_holdout[,"best_logit_with_loss_pred"] <- logit_predicted_probabilities_holdout[,"Hyp.Growth"]
 
 # ROC curve on holdout
-roc_obj_holdout <- roc(data_holdout$default, data_holdout[, "best_logit_with_loss_pred", drop=TRUE])
+roc_obj_holdout <- roc(data_holdout$HyperGrowth, data_holdout[, "best_logit_with_loss_pred", drop=TRUE])
 
 # Get expected loss on holdout
 holdout_treshold <- coords(roc_obj_holdout, x = best_logit_optimal_treshold, input= "threshold",
                            ret="all", transpose = FALSE)
+
 expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$HyperGrowth)
 expected_loss_holdout
 
@@ -540,9 +541,9 @@ data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(Hype
   summarize(AvgAnnGrowth = mean(CAGR))
 
 # Loss
-120000  - (12 * 10000 * (1 - 0.22)^2)
+ (21 * 10000 * (1 - 0.29)^2) - 210000  
 # Win 
-120000 + (12 * 10000 * (1+ 1.04)^2)
+ (21 * 10000 * (1+ 0.85)^2) - 210000
 
 
 table(data_holdout$ind)
