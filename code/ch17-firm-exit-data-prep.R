@@ -35,9 +35,10 @@ library(partykit)
 library(rpart.plot)
 library(tidyr)
 library(readr)
+library(dplyr)
 
 # set working directory
-data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva/")
+data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva")
 SourceFunctions <- paste0("https://raw.githubusercontent.com/Maeva2408/DA3_A2_Bruno_Maeva/main/code/functions/")
 
 # load theme and functions
@@ -79,20 +80,31 @@ data <- data %>% group_by(comp_id) %>%
   mutate(default = ((status_alive == 1) & (lead(status_alive, 2) == 0)) %>%
            as.numeric(.),
          CAGR = ifelse( ( (is.na(lead(sales, 2))) & (status_alive == 1) ),
-                             0,((lead(sales, 2) / sales )^(1/2) - 1)*100) ) %>% ungroup()
+                             0,((lead(sales, 2) / sales )^(1/2) - 1)*100) ) %>% 
+  ungroup()
 
 data <- data %>% mutate(
-  HyperGrowth = CAGR >= 30) %>% 
+  HyperGrowth = ifelse(CAGR >= 30, 1,0)) %>% 
   filter(year <=2013)
 
 # Size and growth
 summary(data$sales) # There will be NAs, we'll drop them soon
 
+# assets can't be negative. Change them to 0 and add a flag.
+data <-data  %>%
+  mutate(flag_asset_problem=ifelse(intang_assets<0 | curr_assets<0 | fixed_assets<0,1,0  ))
+
+data <- data %>%
+  mutate(intang_assets = ifelse(intang_assets < 0, 0, intang_assets),
+         curr_assets = ifelse(curr_assets < 0, 0, curr_assets),
+         fixed_assets = ifelse(fixed_assets < 0, 0, fixed_assets))
+
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
-         ln_sales = ifelse(sales > 0, log(sales), 0),
-         sales_mil=sales/1000000,
-         sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
+         ln_sales  = ifelse(sales > 0, log(sales), 0),
+         sales_mil = sales/1000000,
+         sales_mil_log   = ifelse(sales > 0, log(sales_mil), 0),
+         total_assets_bs = intang_assets + curr_assets + fixed_assets)
 
 # Extra Calculated Fields: 
     #   Wk.CapTO = Use of Investment within the year As ratio of Total Sales -> more the better
@@ -101,51 +113,24 @@ data <- data %>% mutate(
   working_capital_TO =  (curr_assets - curr_liab)/ sales,
   EBITDA = inc_bef_tax + amort)
 
-# NA Checks -> ca. 8.5k / 400k w some but not all NAs
-table(rowSums(is.na(data[c("curr_assets","curr_liab","sales","working_capital","working_capital_TO","EBITDA")])))
-
-
-# assets can't be negative. Change them to 0 and add a flag.
-data <-data  %>%
-  mutate(flag_asset_problem=ifelse(intang_assets<0 | curr_assets<0 | fixed_assets<0,1,0  ))
-table(df$flag_asset_problem)
-
-data <- data %>%
-  mutate(intang_assets = ifelse(intang_assets < 0, 0, intang_assets),
-         curr_assets = ifelse(curr_assets < 0, 0, curr_assets),
-         fixed_assets = ifelse(fixed_assets < 0, 0, fixed_assets))
-
+# D1s : Inventories, total_assets, Amort,EBITDA
+data <- data %>% 
+  group_by(comp_id) %>% 
+  mutate(d1_sales_mil_log      = sales_mil_log - Lag(sales_mil_log, 1),
+         d1_inventories = (inventories - lag(inventories,1))/sales,
+         d1_total_assets_bs = (total_assets_bs - lag(total_assets_bs,1))/sales,
+         d1_amort = (amort - lag(amort,1))/sales ) %>%
+  ungroup()
 
 # Extra YOY changes: -> % terms
-  # Wk.Capital TO
-  # Current Assets
-  # Current Liabilities
-  # Extra Profits
-  # Fixed Assets
+  # Total Assets
   # Inventories
-  # Tangible Assets
-  # Amortization
   # EBITDA
-
-data <- data %>%
-  group_by(comp_id) %>%
-  mutate(d1_sales_mil_log      = sales_mil_log - Lag(sales_mil_log, 1) ,
-         d1_working_capital_TO = ( (working_capital_TO - Lag(working_capital_TO,1 ) ) / Lag(working_capital_TO,1 ) )*100,
-         d1_current_assets     = ( (curr_assets - Lag(curr_assets,1 ) ) / Lag(curr_assets,1 ) )*100,
-         d1_current_liab       = ( (curr_liab - Lag(curr_liab,1 ) ) / Lag(curr_liab,1 ) )*100,
-         d1_extra_profit_loss  = ( (extra_profit_loss - Lag(extra_profit_loss,1 ) ) / Lag(extra_profit_loss,1 ) )*100,
-         d1_fixed_assets       = ( (fixed_assets - Lag(fixed_assets,1 ) ) / Lag(fixed_assets,1 ) )*100,
-         d1_inventories        = ( (inventories - Lag(inventories,1 ) ) / Lag(inventories,1 ) )*100 ,
-         d1_tang_assets        = ( (tang_assets - Lag(tang_assets,1 ) ) / Lag(tang_assets,1 ) )*100,
-         d1_amort              = ( (amort - Lag(amort,1 ) ) / Lag(amort,1 ) )*100,
-         d1_EBITDA             = ( (EBITDA - Lag(EBITDA,1 ) ) / Lag(EBITDA,1 ) )*100
-         ) %>%
-  ungroup()
 
 
 # replace w 0 for new firms + add dummy to capture it
 data <- data %>%
-  mutate(age = (year - founded_year) %>%
+  mutate(age = ifelse(is.na(year - founded_year),0,year - founded_year) %>%
            ifelse(. < 0, 0, .),
          new = as.numeric(age <= 1) %>% #  (age could be 0,1 )
            ifelse(balsheet_notfullyear == 1, 1, .),
@@ -165,13 +150,12 @@ df <- data %>%
   # look at firms below 10m euro revenues and above 10000 euros
   filter(!(sales_mil > 10)) %>%
   filter(!(sales_mil < 0.01)) %>% 
+  filter(age >= 1) %>% 
   filter(!(is.na(HyperGrowth)))
 
-###########################################################
-# Feature engineering
-###########################################################
-
-
+###########################
+#   Feature engineering   #
+###########################
 
 # change some industry category codes
 df <- df %>%
@@ -195,12 +179,6 @@ df <- df %>%
 # look at more financial variables, create ratios
 ###########################################################
 
-
-# generate total assets
-df <- df %>%
-  mutate(total_assets_bs = intang_assets + curr_assets + fixed_assets)
-summary(df$total_assets_bs)
-
 pl_names <- c("extra_exp","extra_inc",  "extra_profit_loss", "inc_bef_tax" ,"inventories",
               "material_exp", "profit_loss_year", "personnel_exp","EBITDA")
 bs_names <- c("intang_assets", "curr_liab", "fixed_assets", "liq_assets", "curr_assets",
@@ -218,31 +196,42 @@ df <- df %>%
 # creating flags, and winsorizing tails
 ########################################################################
 
-#lapply(df %>% select(matches("^d1")) %>% colnames(), function(x) {
-#  df %>% ggplot(aes_string(x = x) ) +
-#    geom_point(aes(y = HyperGrowth)) +
-#    geom_smooth(aes(y = HyperGrowth),method = "loess")
-#})
+## To winsorize : liq_assets_bs, curr_liab_bs, intang_assets_bs,
+    #     personnel_exp_pl, profit_loss_year_pl, material_exp_pl, inventories_pl, inc_bef_tax_pl,
+    #     extra_profit_loss_pl, extra_inc_pl, working_capital_TO, EBITDA
 
-#df %>% select(matches("^d1")) %>% colnames()
+# Visual Checks
+lapply(df %>% select(-matches("begin|end|gender|origin|region|status_alive|founded|exit")) %>% 
+         select(-D) %>% colnames(),function(x) {
+  bounds <- quantile(df[[c(x)]], c(0,1), na.rm = T)
+  print(bounds)
+  df %>% ggplot(aes_string(x = x)) + 
+    geom_histogram(bins = 50) + 
+    xlim(bounds[1],bounds[2]) +theme_tufte()
+})
 
-ggplot(data =  df, aes(x=d1_working_capital_TO, y=as.numeric(HyperGrowth))) +
+
+ggplot(data =  df, aes(x=sales_mil_log, y=as.numeric(HyperGrowth))) +
   geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
   geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
+  geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
+  labs(x = "sales_mil_log",y = "HyperGrowth") +
+  theme_bg()
+
+ggplot(data =  df, aes(x=d1_working_capital_TO, y=HyperGrowth)) +
+  geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
+#  geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
   geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
   labs(x = "Working Capital TO",y = "Hyp.Growth") +
   theme_bg()
 
-as.numeric(df$HyperGrowth)
-
-ggplot(data =  df, aes(x=d1_current_assets, y=as.numeric(HyperGrowth))) +
+ggplot(data =  df, aes(x=d1_total_assets_bs, y=as.numeric(HyperGrowth))) +
   geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
-#  geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
+  geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
   geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
-  ylim(1,2) +
+  ylim(0,1) +
   labs(x = "Current_assets",y = "Hyp.Growth") +
   theme_bg()
-
 
 
 # Variables that represent accounting items that cannot be negative (e.g. materials)
@@ -257,8 +246,11 @@ df <- df %>%
   mutate_at(vars(zero), funs(ifelse(.< 0, 0, .)))
 
 
+
+table(round(df$d1_inventories,0)) # should be betwwen +/- 5
 # for vars that could be any, but are mostly between -1 and 1
-any <-  c("extra_profit_loss_pl", "inc_bef_tax_pl", "profit_loss_year_pl", "share_eq_bs")
+any <-  c("extra_profit_loss_pl", "inc_bef_tax_pl", "profit_loss_year_pl", "share_eq_bs", 
+          "EBITDA_pl","d1_amort","d1_inventories")
 
 df <- df %>%
   mutate_at(vars(any), funs("flag_low"= as.numeric(.< -1))) %>%
@@ -305,8 +297,8 @@ df <- df %>%
 df <- df %>%
   mutate(urban_m = factor(urban_m, levels = c(1,2,3)),
          ind2_cat = factor(ind2_cat, levels = sort(unique(df$ind2_cat)))) %>%
-  mutate(HyperGrowth_f = factor(HyperGrowth, levels = c(FALSE,TRUE)) %>%
-           recode(., `FALSE` = 'no_Hyp.Growth', `TRUE` = "Hyp.Growth"))
+  mutate(HyperGrowth_f = factor(HyperGrowth, levels = c(0,1)) %>%
+           recode(., `0` = 'no_Hyp.Growth', `1` = "Hyp.Growth"))
 
 ########################################################################
  # sales 
@@ -320,7 +312,7 @@ ggplot(data =  df, aes(x=sales_mil_log, y=as.numeric(HyperGrowth))) +
   geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
   geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
   geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
-  labs(x = "sales_mil_log",y = "default") +
+  labs(x = "sales_mil_log",y = "HyperGrowth") +
   theme_bg()
 
 
@@ -346,13 +338,18 @@ d1sale_1
 save_fig("ch17-extra-1", output, "small")
 
 # generate variables ---------------------------------------------------
+# Winsorize - d1_total_assets_bs & Sales changes
 
 df <- df %>%
   mutate(flag_low_d1_sales_mil_log = ifelse(d1_sales_mil_log < -1.5, 1, 0),
          flag_high_d1_sales_mil_log = ifelse(d1_sales_mil_log > 1.5, 1, 0),
          d1_sales_mil_log_mod = ifelse(d1_sales_mil_log < -1.5, -1.5,
                                        ifelse(d1_sales_mil_log > 1.5, 1.5, d1_sales_mil_log)),
-         d1_sales_mil_log_mod_sq = d1_sales_mil_log_mod^2
+         d1_sales_mil_log_mod_sq = d1_sales_mil_log_mod^2,
+         flag_low_d1_total_assets_bs  = ifelse(d1_total_assets_bs < -5,1,0),
+         flag_high_d1_total_assets_bs = ifelse(d1_total_assets_bs >  5,1,0),
+         d1_total_assets_bs_mod       = ifelse(d1_total_assets_bs < -5,-5,
+                                               ifelse(d1_total_assets_bs >  5,5,d1_total_assets_bs))
          )
 
 # no more imputation, drop obs if key vars missing
@@ -361,9 +358,10 @@ df <- df %>%
 
 # drop missing
 df <- df %>%
-  filter(!is.na(age),!is.na(foreign), !is.na(material_exp_pl), !is.na(m_region_loc))
-Hmisc::describe(df$age)
+  filter(!is.na(age),!is.na(foreign), !is.na(material_exp_pl), !is.na(m_region_loc),
+         !is.na(d1_total_assets_bs),!is.na(d1_inventories),!is.na(d1_amort))
 
+Hmisc::describe(df$age)
 
 
 
@@ -393,11 +391,8 @@ save_fig("ch17-extra-3", output, "small")
 table(df$HyperGrowth)
 prop.table(table(df$HyperGrowth))*100
 
-
-# check variables
-# datasummary_skim(data, type="numeric")
-
-
 write_csv(df,paste0(data_out,"bisnode_firms_clean.csv"))
 write_rds(df,paste0(data_out,"bisnode_firms_clean.rds"))
+
+
 
