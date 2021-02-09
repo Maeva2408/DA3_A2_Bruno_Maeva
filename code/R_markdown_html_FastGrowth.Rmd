@@ -143,33 +143,58 @@ After having design our sample, we end up with 15692 companies and 2220 of them 
 ## Feature engineering
 #MAEVa
 Now, We need to select our x variables and maybe transform them but before we need to clean them.
-- Some of the variable are financial accounts (like inventories, current liabilities, etc), so per se they can't be negative, thus we decided to replace the negative value to 0.
-- We created ratios , easier for interpretation and spotting extrem values
+- Some of the variable are financial accounts (like inventories, current liabilities, etc), so they can't be negative, thus we decided to replace the negative value to 0.
+- We created ratios , easier for interpretation and spotting extreme values
 - we used the a method called winsorization 
 - We elevated some variable to a quadratic function
 - We took the log of sales.
 
+We decided to classify the variable 
 
+* **Firm**, _5 variables_ : Age of firm, squared age, a dummy if newly established, industry categories, location regions for its headquarters, and dummy if located in a big city
+
+* **Financial 1**,  _16 variables_ : Winsorized financial variables : sales, fixed, liquid, current, intangible assets, curret liabilities, inventories, equity shares, subscribed capital, sales revenues, income before tax, extra income, material, personal and extra expenditure, extra profit.
+
+* **Financial 2** : Flags (extrem, low, high, zero - when applicable) and polynomials : quadratic term are created for profit and loss, extra profit and loss, income before tax, and share equity.
+
+* **Financial 3** : % blance sheet, % profite and loss
+
+* **Growth**, _X variable_ : Sales growth is captured by a winsorized growth variable, its quadratic term and flags for extreme low and high values.
+
+* **HR**, _5 variable_ : 5 variables :  For the CEO: Female dummy, winsorized age and flags, flags for missing information; foreign management dummy; labor cost, and flag for missing labor cost information.
+
+* **Data quality**, _3 variables_: Variables related to the data quality of the financial information, flag for a problem, and the length of the year that the balance sheet covers.
+
+We chose to include some interactions as well, that we defined by common knwoledge.
+
+* **Interaction** : Interactions with the sales growth, firm size, and industry
 
 ```{r, eval=TRUE, echo=FALSE, results='asis'}
 
 ```
-## Interaction
-# Same as class 
-We lookzd for interaction
 
-```{r, eval=TRUE, echo=FALSE, results='asis'}
-
-
-
-```
 # Probability prediction and model selection
 
+We decided to use three different models for the prediction of fast growing firm : Logit, Lasso and random forest.
 
 ## Logit
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
 
 ```
+We started by carrying out a probability prediction by logit. Used cross-validation to select the best model and used the holdout to determine the prediction form that model. 
+
+We created five different models. The predictors of the two first models were handpicked and then we gradually add more categories at each models.
+
+* **X1** : Log of sales in Millions, the square of the Log of sales in Millions , Winsorized value of the change of the log of Sales versus last year, profit and loss by total sales, Industries categories
+
+* **X2** : X1, fixed assets divided by total assets, share equity divided by total assets,current liability divided by total assets, hight flags for current liability divided by total assets, flag error for current liability divided by total assets,age, foreign_management
+
+* **X3** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth
+
+* **X4** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth, _Financial 2_, _HR_, _Data quality_
+
+* **X5** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth , Financial 2, HR, Data quality, _Intercactions_
+
 # variables - tables
 # Ratio EBITDA
 # Show RMSE
