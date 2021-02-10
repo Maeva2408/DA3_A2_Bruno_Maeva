@@ -198,7 +198,7 @@ tuned_logit_lasso_model <- logit_lasso_model$finalModel
 best_lambda <- logit_lasso_model$bestTune$lambda
 logit_models[["LASSO"]] <- logit_lasso_model
 lasso_coeffs <- as.matrix(coef(tuned_logit_lasso_model, best_lambda))
-write.csv(lasso_coeffs, paste0(output, "lasso_logit_coeffs.csv"))
+#write.csv(lasso_coeffs, paste0(output, "lasso_logit_coeffs.csv"))
 
 CV_RMSE_folds[["LASSO"]] <- logit_lasso_model$resample[,c("Resample", "RMSE")]
 CV_RMSE_folds[["LASSO"]]
@@ -226,11 +226,8 @@ rbindlist(lapply(1:6,function(x) {
 
 library(data.table)
 
-rfvars  <-  X4
-#rfvars  <-  c("sales_mil", "d1_sales_mil_log", Fin1, HR, firm, qualityvars)
-
-
 # 5 fold cross-validation
+rfvars  <-  X4
 
 train_control <- trainControl(
   method = "cv",
@@ -240,8 +237,6 @@ train_control <- trainControl(
   savePredictions = TRUE
 )
 train_control$verboseIter <- TRUE
-
-length(X4)
 
 tune_grid <- expand.grid(
   .mtry = c( 9, 10, 11),
@@ -322,20 +317,22 @@ data_holdout[,"best_logit_no_loss_pred"] <- logit_predicted_probabilities_holdou
 RMSE(data_holdout[, "best_logit_no_loss_pred", drop=TRUE], data_holdout$HyperGrowth)
 
 # discrete ROC (with thresholds in steps) on holdout -------------------------------------------------
-thresholds <- seq(0.05, 0.75, by = 0.05)
+thresholds <- seq(0.05, 0.75, by = 0.01)
 
 cm <- list()
 true_positive_rates <- c()
 false_positive_rates <- c()
+
+#thr <- thresholds[1]
 for (thr in thresholds) {
-  holdout_prediction <- ifelse(data_holdout[,"best_logit_no_loss_pred"] < thr, "no_default", "default") %>%
-    factor(levels = c("no_default", "default"))
-  cm_thr <- confusionMatrix(holdout_prediction,data_holdout$default_f)$table
+  holdout_prediction <- ifelse(data_holdout[,"best_logit_no_loss_pred"] < thr, "no_Hyp.Growth", "Hyp.Growth") %>%
+    factor(levels = c("no_Hyp.Growth", "Hyp.Growth"))
+  cm_thr <- confusionMatrix(holdout_prediction,data_holdout$HyperGrowth_f)$table
   cm[[as.character(thr)]] <- cm_thr
-  true_positive_rates <- c(true_positive_rates, cm_thr["default", "default"] /
-                             (cm_thr["default", "default"] + cm_thr["no_default", "default"]))
-  false_positive_rates <- c(false_positive_rates, cm_thr["default", "no_default"] /
-                              (cm_thr["default", "no_default"] + cm_thr["no_default", "no_default"]))
+  true_positive_rates <- c(true_positive_rates, cm_thr["Hyp.Growth", "Hyp.Growth"] /
+                             (cm_thr["Hyp.Growth", "Hyp.Growth"] + cm_thr["no_Hyp.Growth", "Hyp.Growth"]))
+  false_positive_rates <- c(false_positive_rates, cm_thr["Hyp.Growth", "no_Hyp.Growth"] /
+                              (cm_thr["Hyp.Growth", "no_Hyp.Growth"] + cm_thr["no_Hyp.Growth", "no_Hyp.Growth"]))
 }
 
 tpr_fpr_for_thresholds <- tibble(
@@ -349,7 +346,7 @@ discrete_roc_plot <- ggplot(
   aes(x = false_positive_rate, y = true_positive_rate, color = threshold)) +
   labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)") +
   geom_point(size=2, alpha=0.8) +
-  #scale_color_viridis(option = "D", direction = -1) +
+  scale_color_viridis(option = "D", direction = -1) +
   scale_x_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
   scale_y_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
   theme_bg() +
@@ -362,7 +359,7 @@ save_fig("ch17-figure-2a-roc-discrete", output, "small")
 
 # continuous ROC on holdout with best model (Logit 4) -------------------------------------------
 
-roc_obj_holdout <- roc(data_holdout$HyperGrowth_f, data_holdout$best_logit_with_loss_pred)
+roc_obj_holdout <- roc(data_holdout$HyperGrowth_f, data_holdout$best_logit_no_loss_pred)
 
 createRocPlot(roc_obj_holdout, "best_logit_no_loss_roc_plot_holdout")
 
@@ -374,7 +371,7 @@ summary(logit_class_prediction)
 
 # confusion matrix: summarize different type of errors and successfully predicted cases
 # positive = "yes": explicitly specify the positive case
-cm_object1 <- confusionMatrix(logit_class_prediction, data_holdout$default_f, positive = "default")
+cm_object1 <- confusionMatrix(logit_class_prediction, data_holdout$HyperGrowth_f, positive = "Hyp.Growth")
 cm1 <- cm_object1$table
 cm1
 
@@ -546,7 +543,7 @@ data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(Hype
  (21 * 10000 * (1+ 0.85)^2) - 210000
 
 
-table(data_holdout$ind)
+#table(data_holdout$ind)
 
 
 data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
@@ -562,11 +559,11 @@ summary_results <- data.frame("Number of predictors" = unlist(nvars),
                               "CV threshold" = unlist(best_tresholds),
                               "CV expected Loss" = unlist(expected_loss))
 
-model_names <- c("Logit X1", "Logit X4",
-                 "Logit LASSO","RF probability")
-summary_results <- summary_results %>%
-  filter(rownames(.) %in% c("X1", "X4", "LASSO", "rf_p"))
-rownames(summary_results) <- model_names
+#model_names <- c("Logit X1", "Logit X4",
+#                 "Logit LASSO","RF probability")
+#summary_results <- summary_results %>%
+#  filter(rownames(.) %in% c("X1", "X4", "LASSO", "rf_p"))
+#rownames(summary_results) <- model_names
 
 kable(x = summary_results, format = "latex", booktabs=TRUE,  digits = 3, row.names = TRUE,
       linesep = "", col.names = c("Number of predictors", "CV RMSE", "CV AUC",
