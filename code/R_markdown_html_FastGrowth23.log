@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2021.1.31)  11 FEB 2021 11:29
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2021.1.31)  11 FEB 2021 13:14
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**R_markdown_html_FastGrowth.tex
-(./R_markdown_html_FastGrowth.tex
+**R_markdown_html_FastGrowth23.tex
+(./R_markdown_html_FastGrowth23.tex
 LaTeX2e <2020-10-01> patch level 4
 L3 programming layer <2021-01-09> xparse <2020-03-03> (c:/Users/helme/AppData/R
 oaming/TinyTeX/texmf-dist/tex/latex/base/article.cls
@@ -705,7 +705,7 @@ File: tc-pdftex.def 2019/01/04 v2.2 Clipping driver for pdftex
 \adjbox@pheight=\dimen287
 \adjbox@pdepth=\dimen288
 \adjbox@ptotalheight=\dimen289
-) (./R_markdown_html_FastGrowth.aux
+) (./R_markdown_html_FastGrowth23.aux
 
 LaTeX Warning: Label `tab:loss function' multiply defined.
 
@@ -713,13 +713,10 @@ LaTeX Warning: Label `tab:loss function' multiply defined.
 LaTeX Warning: Label `tab:loss function' multiply defined.
 
 
-LaTeX Warning: Label `tab:unnamed-chunk-8' multiply defined.
-
-
-LaTeX Warning: Label `tab:unnamed-chunk-9' multiply defined.
+LaTeX Warning: Label `tab:unnamed-chunk-5' multiply defined.
 
 )
-\openout1 = `R_markdown_html_FastGrowth.aux'.
+\openout1 = `R_markdown_html_FastGrowth23.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 90.
 LaTeX Font Info:    ... okay on input line 90.
@@ -770,9 +767,9 @@ Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 LaTeX Info: Redefining \ref on input line 90.
 LaTeX Info: Redefining \pageref on input line 90.
 LaTeX Info: Redefining \nameref on input line 90.
-(./R_markdown_html_FastGrowth.out) (./R_markdown_html_FastGrowth.out)
+(./R_markdown_html_FastGrowth23.out) (./R_markdown_html_FastGrowth23.out)
 \@outlinefile=\write3
-\openout3 = `R_markdown_html_FastGrowth.out'.
+\openout3 = `R_markdown_html_FastGrowth23.out'.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -874,27 +871,27 @@ File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [1
 
 {c:/Users/helme/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdfte
-x.map}] [2]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 5
-03.
+x.map}] [2] [3]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 6
+09.
 (c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [3] [4] [5] (./R_markdown_html_FastGrowth.aux)
+) [4] [5] [6] (./R_markdown_html_FastGrowth23.aux)
 
 LaTeX Warning: There were multiply-defined labels.
 
-Package rerunfilecheck Info: File `R_markdown_html_FastGrowth.out' has not chan
-ged.
-(rerunfilecheck)             Checksum: 8FA532EEA58FD5D97A2B703132EC9F40;2651.
+Package rerunfilecheck Info: File `R_markdown_html_FastGrowth23.out' has not ch
+anged.
+(rerunfilecheck)             Checksum: D9E6176ACA90AACF5DC226628AA5F0F8;1644.
  ) 
 Here is how much of TeX's memory you used:
- 16692 strings out of 481252
- 285891 string characters out of 5914123
- 589096 words of memory out of 5000000
- 33263 multiletter control sequences out of 15000+600000
+ 16666 strings out of 481252
+ 285462 string characters out of 5914123
+ 589800 words of memory out of 5000000
+ 33250 multiletter control sequences out of 15000+600000
  471973 words of font info for 81 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 71i,13n,75p,447b,789s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 71i,13n,75p,330b,725s stack positions out of 5000i,500n,10000p,200000b,80000s
 {c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.e
 nc}{c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1
 .enc}<c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/l
@@ -905,10 +902,10 @@ e1/public/lm/lmr12.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts
 /type1/public/lm/lmr17.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/f
 onts/type1/public/lm/lmri10.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-d
 ist/fonts/type1/public/lm/lmtt10.pfb>
-Output written on R_markdown_html_FastGrowth.pdf (5 pages, 191874 bytes).
+Output written on R_markdown_html_FastGrowth23.pdf (6 pages, 191551 bytes).
 PDF statistics:
- 176 PDF objects out of 1000 (max. 8388607)
- 160 compressed objects within 2 object streams
- 56 named destinations out of 1000 (max. 500000)
- 137 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 146 PDF objects out of 1000 (max. 8388607)
+ 129 compressed objects within 2 object streams
+ 43 named destinations out of 1000 (max. 500000)
+ 89 words of extra memory for PDF output out of 10000 (max. 10000000)
 
