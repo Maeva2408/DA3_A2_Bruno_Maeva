@@ -418,6 +418,8 @@ grid.arrange(summary_results, ncol = 1, as.table = T)
 
 
 ```
+
+
 # all variables
 # comparing lasso to the best logit
 
@@ -471,10 +473,7 @@ data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(Hype
 ```{r, eval=TRUE, echo=FALSE, results='asis'}
 # Average Growth among invested companies
 data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
-  summarize(AvgAnnGrowth = mean(CAGR),Firms_Selected = n()) 
-
-data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
-  summarize(Firms = n()) 
+  summarize(AvgAnnGrowth = mean(CAGR),Firms_Selected = n()) %>% as_hux()
 
 
 # Loss

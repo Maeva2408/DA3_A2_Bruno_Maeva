@@ -19,6 +19,7 @@ This analysis aimed at predicting the fast growing of a firm.
 rm(list=ls())
 
 # Import libraries
+library(huxtable)
 library(gridExtra)
 library(haven)
 library(glmnet)
@@ -41,8 +42,10 @@ library(rpart)
 library(partykit)
 library(rpart.plot)
 library(huxtable)
+library(ggthemes)
 
 
+options(scipen=999)
 
 # set working directory
 data_dir <- paste0(getwd(),"/DA3_A2_Bruno_Maeva/")
@@ -119,49 +122,40 @@ data_holdout <- data[-train_indices, ]
 
 This analysis serves to predict fast growth of firms between 2012 and 2014. This analysis could help an investor to decide to invest in a certain company or not. The data was originally created by Bisnode, a major European business information company. The original dataset, bisnode-firms, considers companies between 2005 & 2016 in both Manufacturing (Electrical equipment, Motor vehicles, etc) & Services (Accommodation, and Food & Beverage services activities). 
 
-As business context, we consider our client to be a silent investor group as of 2012, who is looking for suitable companies to invest in, with expected returns on their investments in 2 years. As such, we considered companies at least 1 year old, since such companies have all accumulated financial data over multiple years, yet many are young, with higher chances of gaining further market share. We only considered businesses generating annual sales between 100 thousand, & 10 million Euros, boasting sufficiently large sales for the business venture to be considered 'serious', yet small enough for it's size not to be considered a disadvantage.
-
 # Data
 
-## Label engineering
+## Label Engineering
 
-The first step of this analysis was to define fast growth. To do so, we used the compound annual growth rate formula. 
+Firstly, we chose to define fast growth in terms of sales, more specifically, the compound annual growth rate of sales between 2012 & 2014 (Please see the formula specification below). We defined any firm with a % CAGR of at least 25% in the coming 2 years as a 'Fast Growing' firm, implying their sales would grow ca. 60% two years into the future. One reason for this, is the time-consuming administrative process of actually investing into firms.
 
-CAGR = (Vfinal/Vbegin)^1/t - 1 
+$$CAGR = (\frac{Vfinal}{Vbegin})^\frac{1}{t} - 1$$
+
+* **t** being the time in years, we defined it as 2. 
+
+* **Vbegin** is the Sales (in euro) in the year ongoing
+
+* **Vfinal** is the Sales (in euro) the year +2
+
+## Sample Design
+
+As business context, we consider our client to be a silent investor group as of 2012, who is looking for suitable companies to invest in, with expected returns on their investments in 2 years. As such, we considered companies at least 1 year old, since such companies have already accumulated financial data over multiple years, yet many are young, with higher chances of gaining further market share. We only considered businesses generating annual sales between 100 thousand, & 10 million Euros, boasting sufficiently large sales for the business venture to be considered 'serious', yet small enough for it's size not to be considered a disadvantage. After having design our sample, we end up with 14896 companies and 2413 of them (16%) are fast growing.
+
+```{r , message = F, warning = F, echo = T, fig.align='center', fig.height=3, fig.width= 6}
+CAGR_plot <- ggplot(data,aes(x = CAGR)) +
+  geom_histogram(binwidth = 5, color = "orangered4", fill = "salmon") +
+  geom_vline( xintercept = 25, color = "coral4", linetype = "dashed") +
+  scale_x_continuous(limits = c(-100,200), breaks = c(seq(-100,200,100),25)) +
+  theme_tufte() + labs(title = "CAGR % Sample Distribution & Cut-off Point ",
+                       y = "Frequency among Firms", y = "CAGR % ")
+
+grid.arrange(CAGR_plot,ncol = 1)
+
+```
 
 
-* t being the time in years, we defined it as 2. 
+## Feature Engineering
 
-* It seems logic for us that if an investor took interest in a firm, he will be able only to invest the year later.
-
-* Vbegin is the Sales (in euro) in the year ongoing
-
-* Vfinal is the Sales (in euro) the year +2
-
-we converted in percentage.
-we defined any firm that have a % CAGR of bigger or equal at 25% in two years as a fast growing firm, it means that they growth for at least 60% in two years.
-
-## Sample design
-
-Our sample is defined as 
-- Firms still in business in 2012
-- Firms that have sales between 10 000 euro and 10 millions euro
-
-Our fast growing firms are compound annual growth percentage bigger or equal at 30% in two year
-
-After having design our sample, we end up with 14896 companies and 2413 of them (16%) are fast growing.
-
-## Feature engineering
-
-Now, We need to select our x variables and maybe transform them but before we need to clean them.
-Some of the variable are financial accounts (like inventories, current liabilities, etc), so they can't be negative, thus we decided to replace the negative value to 0.
-We created ratios , easier for interpretation and spotting extreme values
-We also created new varibales : change between the variable now and two years ago, we did it for the log of Sales difference (in million), inventories, total assets and amortization.
-we used the a method called winsorization to avoid extrem value. We used it for the change in sales and in total assets.
-We elevated some variable to a quadratic function
-We took the log of sales.
-
-We decided to classify the variable 
+Now, we need to select, clean & possibly transform our x variables. Some variables are financial accounts (e.g. inventories, current liabilities etc.) so they cannot be negative, thus we replaced the negative values to 0 & included flagging dummy variables to indicate our inputation. We created ratios, easier for interpretation & spotting extreme values. We also created new variables, e.g. change between the variable now & a year ago, we did it for the log of Sales (in million), inventories, total assets & amortization. Finally, we used a method called 'winsorization' on the change in sales & in total assets, to avoid extreme values. Afterwards, we grouped our variables, for easier interpretation, & better overview. Please see them below:
 
 * **Firm**, _5 variables_ : Age of firm, squared age, a dummy if newly established, industry categories, location regions for its headquarters, and dummy if located in a big city
 
@@ -185,8 +179,7 @@ We chose to include some interactions as well, that we defined by common knwoled
 # Probability prediction and model selection
 
 We decided to use three different models for the prediction of fast growing firm : Logit, Lasso and Random Forest.
-Our 5 Logistic regression models gradually incorporate more & more of the variable described groups above, where our final model, similarly to LASSO, incorporates all available variables. Finally, our Random Forest model considers all variable groups except interactions. We used a 5-fold cross-validation to estimate models and then we selected the best model based on expected loss.
-To calculate the expected loss we defined the cost of false negative and false positive errors.
+Our 5 Logistic regression models gradually incorporate more & more of the variable described groups above, where our final model, similarly to LASSO, incorporates all available variables. Finally, our Random Forest model considers all variable groups except interactions. We used a 5-fold cross-validation to estimate models and then we selected the best model based on expected loss. To calculate the expected loss we defined the cost of false negative and false positive errors.
 
 ## Define loss function
 
@@ -257,7 +250,7 @@ lasso_coeffs <- as.matrix(coef(tuned_logit_lasso_model, best_lambda))
 
 CV_RMSE_folds[["LASSO"]] <- logit_lasso_model$resample[,c("Resample", "RMSE")]
 
-# RandForest 5 fold cross-validation
+# RandForest 5 fold cross-validation -----------
 rfvars  <-  X4
 
 train_control <- trainControl(
@@ -275,7 +268,6 @@ tune_grid <- expand.grid(
   .min.node.size = c(10, 15)
 )
 
-# getModelInfo("ranger")
 set.seed(13505)
 rf_model_p <- train(
   formula(paste0("HyperGrowth_f ~ ", paste0(rfvars , collapse = " + "))),
@@ -323,22 +315,21 @@ FN <- 5
 cost <- FN/FP
 
 # CAGR for Hypergrowth companies -> triple in size in 2 years 
-data[data$HyperGrowth == 1,] %>% summarize(AvgCAGR = round(mean(CAGR),2))
+#data[data$HyperGrowth == 1,] %>% summarize(AvgCAGR = round(mean(CAGR),2))
 
 # CAGR for Non-Hypergrowth companies -> 
   #   No default -> no loss no gain
   #   Default   -> all money lost - ca. 20% among no hypergrowth firms
-data[(data$HyperGrowth == 0) && (data$default == 0),] %>% summarize(AvgCAGR = round(mean(CAGR),2))
+#data[(data$HyperGrowth == 0) && (data$default == 0),] %>% summarize(AvgCAGR = round(mean(CAGR),2))
 
-prop.table(table(data$default,data$HyperGrowth),2) %>% as_hux()
+#prop.table(table(data$default,data$HyperGrowth),2) %>% as_hux()
   # this would mean O * 0.8 - 1 * 0.2 = -0.2
     # we also could have used our money else where -> to triple it by giving it to hypergrowth firm:
     # on the other hand one gains more experience by making mistakes - something we also wanted to incorporate
   # 0 * 0.8 - 1 * 0.2 - 2 +1 = -1.2
 
 # the prevalence, or the proportion of cases in the population (n.cases/(n.controls+n.cases))
-prevelance = sum(data_train$HyperGrowth_f == "Hyp.Growth")/length(data_train$HyperGrowth_f)
-
+prevelance <- sum(data_train$HyperGrowth_f == "Hyp.Growth")/length(data_train$HyperGrowth_f)
 
 ```
 
@@ -417,16 +408,11 @@ summary_results <- data.frame("Model" = names(logit_models),
 rownames(summary_results) <- NULL
 summary_results %>% as_hux()
 
-#grid.arrange(summary_results, ncol = 1, as.table = T)
-
-
 ```
 
 
 Please see all models summary statistics above. Observed the lowest Root Mean Square Error is 36.1 %, given by models X3, Lasso & Random forest. However all models were very close, the highest RMSE being 36.6%. The highest 'Area Under the Curve' is given by the Random Forest model, with AUC = 65,1%. I.e. Using this model, we are 15% better off than by simple random guessing, & 7% better off vs the base model, X1. However, like for the RMSE, the model X4 is very close to the Random forest with a AUC of 64,8%.
 
-
-EXPECTED LOSS
 We base our final model selection on minimized expected loss, for which we first selected optimal classification threshold values of each model, thereby comparing the best possible expected loss for each model. The smaller expected loss is 0.793 is the model X4. Considering that it is a very theoretical concept, we only interpret it in relative terms: it is the lowest of all models, though our models again show little variation. Thus, our final model choice is Model X4. It had the lowest expected loss (the most important criteria), while the AUC & RMSE were very close to being the best.
 
 
@@ -468,36 +454,46 @@ data_holdout$holdout_prediction_benchmark <-
 cm_object_benchmark <- confusionMatrix(data_holdout$holdout_prediction_benchmark,data_holdout$HyperGrowth_f)
 cm4 <- cm_object_benchmark$table
 
-colnames(cm3) <- c("Final_Model","Final_Model")
-colnames(cm4) <- c("Benchmark_Model","Benchmark_Model")
+colnames(cm3) <- paste0(colnames(cm3),c("Final_Model","Final_Model"))
+colnames(cm4) <- paste0(colnames(cm4),c("Benchmark_Model","Benchmark_Model"))
 prediction <- c("no_Hyp.Growth","Hyp.Growth")
+as.data.frame(prediction)
 
-rbind(prediction,cbind(cm3,cm4)) %>% kable()
+cbind(as.data.frame(prediction),cbind(cm3,cm4)) %>% as_hux(add_colnames = T)
 
 # Average Growth among invested companies
-data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
-  summarize(AvgAnnGrowth = mean(CAGR)) %>% as_hux()
+#data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
+#  summarize(AvgAnnGrowth = mean(CAGR)) %>% as_hux()
 ```
 
 
 
-```{r, eval=TRUE, echo=FALSE, results='asis'}
+```{r, message = F, warning = F, eval=TRUE, echo=FALSE, results='asis'}
 # Average Growth among invested companies
-data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
-  summarize(AvgAnnGrowth = mean(CAGR),Firms_Selected = n()) %>% as_hux()
+Outcomes <- data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
+  summarize(AvgAnnGrowth = mean(CAGR),
+            Firms_Selected = n(),
+            Investment_per_Firm = 10000) 
+
+Loss <-  (21 * 10000 * (1 - 0.293)^2) - 210000  
+Win <-  (21 * 10000 * (1+ 0.859)^2) - 210000
+NetEarnings <- rbind(Loss,Win)
+cbind(Outcomes,NetEarnings) %>% as_hux()
+(Win + Loss) / 420000
 
 
-# Loss
- (21 * 10000 * (1 - 0.29)^2) - 210000  
-# Win 
- (21 * 10000 * (1+ 0.85)^2) - 210000
 
-data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
+OutcomePerInd <- data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
   group_by(HyperGrowth_f,ind2) %>% 
   summarize(AvgAnnGrowth = mean(CAGR),
             Nr_Investments = n()) %>% as_hux()
 
 ```
+
+```{r}
+OutcomePerInd
+```
+
 
 # Conclusion / Summary
 

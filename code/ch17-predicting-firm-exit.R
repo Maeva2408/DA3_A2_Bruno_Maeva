@@ -116,6 +116,17 @@ X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, Fin1, Fin3, Growth, HR, quali
 
 # separate datasets -------------------------------------------------------
 
+
+table(round(data$CAGR,0))
+
+library(ggthemes)
+ggplot(data,aes(x = CAGR)) +
+  geom_histogram(binwidth = 5, color = "orangered4", fill = "salmon") + 
+  geom_vline( xintercept = 25, color = "coral4", linetype = "dashed") +
+  scale_x_continuous(limits = c(-100,400), breaks = c(seq(-100,400,100),25)) +
+  theme_tufte() + labs(title = "CAGR % Sample Distribution & Cut-off Point ",
+                       y = "Frequency among Firms", y = "CAGR % ")
+
 set.seed(13505)
 train_indices <- as.integer(createDataPartition(data$HyperGrowth, p = 0.8, list = FALSE))
 data_train <- data[train_indices, ]
