@@ -522,7 +522,6 @@ holdout_treshold <- coords(roc_obj_holdout, x = best_logit_optimal_treshold, inp
 expected_loss_holdout <- (holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$HyperGrowth)
 expected_loss_holdout
 
-
 hist(data_holdout$best_logit_with_loss_pred)
 
 # Confusion table on holdout with optimal threshold
@@ -532,6 +531,22 @@ data_holdout$holdout_prediction <-
 cm_object3 <- confusionMatrix(data_holdout$holdout_prediction,data_holdout$HyperGrowth_f)
 cm3 <- cm_object3$table
 cm3
+
+# Benchmark Model --------------------
+summary_results
+benchmark_model <- logit_models[["X1"]]
+benchmark_threshold <- best_tresholds[["X1"]]
+
+benchmark_predicted_probabilities_holdout <- predict(benchmark_model, newdata = data_holdout, type = "prob")
+data_holdout[,"benchmark_pred"] <- benchmark_predicted_probabilities_holdout[,"Hyp.Growth"]
+
+data_holdout$holdout_prediction_benchmark <-
+  ifelse(data_holdout$benchmark_pred < benchmark_threshold, "no_Hyp.Growth", "Hyp.Growth") %>%
+  factor(levels = c("no_Hyp.Growth", "Hyp.Growth"))
+cm_object_benchmark <- confusionMatrix(data_holdout$holdout_prediction_benchmark,data_holdout$HyperGrowth_f)
+cm4 <- cm_object_benchmark$table
+cm4
+
 
 # Average Growth among invested companies
 data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2021.1.31)  10 FEB 2021 23:44
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2021.1.31)  11 FEB 2021 11:13
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -707,19 +707,16 @@ File: tc-pdftex.def 2019/01/04 v2.2 Clipping driver for pdftex
 \adjbox@ptotalheight=\dimen289
 ) (./R_markdown_html_FastGrowth.aux
 
-LaTeX Warning: Label `tab:unnamed-chunk-9' multiply defined.
+LaTeX Warning: Label `tab:loss function' multiply defined.
 
 
-LaTeX Warning: Label `tab:unnamed-chunk-9' multiply defined.
+LaTeX Warning: Label `tab:loss function' multiply defined.
 
 
 LaTeX Warning: Label `tab:unnamed-chunk-9' multiply defined.
 
 
 LaTeX Warning: Label `tab:unnamed-chunk-10' multiply defined.
-
-
-LaTeX Warning: Label `tab:unnamed-chunk-11' multiply defined.
 
 )
 \openout1 = `R_markdown_html_FastGrowth.aux'.
@@ -877,27 +874,27 @@ File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [1
 
 {c:/Users/helme/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdfte
-x.map}] [2] [3]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 6
-09.
+x.map}]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 2
+21.
 (c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [4] [5] [6] (./R_markdown_html_FastGrowth.aux)
+) [2] [3] [4] [5] [6] (./R_markdown_html_FastGrowth.aux)
 
 LaTeX Warning: There were multiply-defined labels.
 
 Package rerunfilecheck Info: File `R_markdown_html_FastGrowth.out' has not chan
 ged.
-(rerunfilecheck)             Checksum: 33FC120565AC38B251D6E31DE55D2272;3068.
+(rerunfilecheck)             Checksum: A58B715597F29B1233DE96848C8B417A;2986.
  ) 
 Here is how much of TeX's memory you used:
- 16711 strings out of 481252
- 286121 string characters out of 5914123
- 590225 words of memory out of 5000000
- 33271 multiletter control sequences out of 15000+600000
+ 16705 strings out of 481252
+ 286050 string characters out of 5914123
+ 591202 words of memory out of 5000000
+ 33269 multiletter control sequences out of 15000+600000
  471973 words of font info for 81 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 71i,13n,75p,447b,789s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 71i,13n,75p,447b,866s stack positions out of 5000i,500n,10000p,200000b,80000s
 {c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.e
 nc}{c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1
 .enc}<c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/l
@@ -908,10 +905,10 @@ e1/public/lm/lmr12.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/fonts
 /type1/public/lm/lmr17.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-dist/f
 onts/type1/public/lm/lmri10.pfb><c:/Users/helme/AppData/Roaming/TinyTeX/texmf-d
 ist/fonts/type1/public/lm/lmtt10.pfb>
-Output written on R_markdown_html_FastGrowth.pdf (6 pages, 193634 bytes).
+Output written on R_markdown_html_FastGrowth.pdf (6 pages, 195145 bytes).
 PDF statistics:
- 204 PDF objects out of 1000 (max. 8388607)
- 187 compressed objects within 2 object streams
- 67 named destinations out of 1000 (max. 500000)
- 169 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 196 PDF objects out of 1000 (max. 8388607)
+ 179 compressed objects within 2 object streams
+ 63 named destinations out of 1000 (max. 500000)
+ 161 words of extra memory for PDF output out of 10000 (max. 10000000)
 

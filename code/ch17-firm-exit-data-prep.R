@@ -97,14 +97,16 @@ data <-data  %>%
 data <- data %>%
   mutate(intang_assets = ifelse(intang_assets < 0, 0, intang_assets),
          curr_assets = ifelse(curr_assets < 0, 0, curr_assets),
-         fixed_assets = ifelse(fixed_assets < 0, 0, fixed_assets))
+         fixed_assets = ifelse(fixed_assets < 0, 0, fixed_assets),
+         tang_assets = ifelse(tang_assets < 0, 0, tang_assets))
 
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
          ln_sales  = ifelse(sales > 0, log(sales), 0),
          sales_mil = sales/1000000,
          sales_mil_log   = ifelse(sales > 0, log(sales_mil), 0),
-         total_assets_bs = intang_assets + curr_assets + fixed_assets)
+         total_assets_bs = intang_assets + curr_assets + fixed_assets + tang_assets)
+
 
 # Extra Calculated Fields: 
     #   Wk.CapTO = Use of Investment within the year As ratio of Total Sales -> more the better

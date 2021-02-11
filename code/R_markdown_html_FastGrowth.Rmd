@@ -67,6 +67,8 @@ Fin1 <-  c("curr_assets", "curr_liab", "extra_exp",
            "profit_loss_year", "sales", "share_eq", "subscribed_cap",
            "tang_assets","amort", "EBITDA")
 
+length(Fin1)
+
 Fin2 <- c("extra_profit_loss_pl_quad", "inc_bef_tax_pl_quad",
           "profit_loss_year_pl_quad", "share_eq_bs_quad",
           c(grep("*flag_low$", names(data), value = TRUE),
@@ -180,13 +182,9 @@ We chose to include some interactions as well, that we defined by common knwoled
 
 * **Interaction** : Interactions with the sales growth, firm size, and industry
 
-```{r, eval=TRUE, echo=FALSE, results='asis'}
-
-```
-
 # Probability prediction and model selection
 
-We decided to use three different models for the prediction of fast growing firm : Logit, Lasso and Random Forest.
+We decided to use 3 different models for the prediction of fast growing firms : Logit, Lasso and Random Forest.
 Our 5 Logistic regression models gradually incorporate more & more of the variable groups above, where our final model, similarly to LASSO, incorporates all available variables. Finally, our Random Forest model considers all variable groups except interactions.  
 
 ## Logit
@@ -201,7 +199,6 @@ train_control <- trainControl(
 )
 
 # Train Logit Models ----------------------------------------------
-
 logit_model_vars <- list("X1" = X1, "X2" = X2, "X3" = X3, "X4" = X4, "X5" = X5)
 
 CV_RMSE_folds <- list()
@@ -222,43 +219,10 @@ for (model_name in names(logit_model_vars)) {
   )
 
   logit_models[[model_name]] <- glm_model
-  # Calculate RMSE on test for each fold
+# Calculate RMSE on test for each fold
   CV_RMSE_folds[[model_name]] <- glm_model$resample[,c("Resample", "RMSE")]
 
 }
-
-#CV_RMSE_folds
-#logit_models
-```
-We started by carrying out a probability prediction by logit. Used 5-fold cross-validation to select the best model.
-
-We created five different models. The predictors of the first two models were handpicked and then we gradually add more categories at each models.
-
-* **X1** : Log of sales in Millions, the square of the Log of sales in Millions , Winsorized value of the change of the log of Sales versus last year, profit and loss by total sales, Industries categories
-
-* **X2** : X1, fixed assets divided by total assets, share equity divided by total assets,current liability divided by total assets, hight flags for current liability divided by total assets, flag error for current liability divided by total assets,age, foreign_management
-
-* **X3** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth
-
-* **X4** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth, _Financial 2_, _HR_, _Data quality_
-
-* **X5** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth , Financial 2, HR, Data quality, _Intercactions_
-
-# variables - tables
-# Ratio EBITDA
-# Show RMSE
-# Choose the model
-
-
-
-
-```{r, eval=TRUE, echo=FALSE, results='asis', warning= FALSE}
-
-```
-
-## LASSO 
-
-```{r, message = F,warning = F, echo = FALSE, eval=TRUE}
 
 # Logit lasso -----------------------------------------------------------
 logitvars <- c("sales_mil_log", "sales_mil_log_sq", 
@@ -283,23 +247,10 @@ tuned_logit_lasso_model <- logit_lasso_model$finalModel
 best_lambda <- logit_lasso_model$bestTune$lambda
 logit_models[["LASSO"]] <- logit_lasso_model
 lasso_coeffs <- as.matrix(coef(tuned_logit_lasso_model, best_lambda))
-#write.csv(lasso_coeffs, paste0(output, "lasso_logit_coeffs.csv"))
 
 CV_RMSE_folds[["LASSO"]] <- logit_lasso_model$resample[,c("Resample", "RMSE")]
-#CV_RMSE_folds[["LASSO"]]
 
-
-#logit_models
-#CV_RMSE_folds
-
-```
-# all variables
-# comparing lasso to the best logit
-
-
-## Random forest
-```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
-# 5 fold cross-validation
+# RandForest 5 fold cross-validation
 rfvars  <-  X4
 
 train_control <- trainControl(
@@ -327,75 +278,31 @@ rf_model_p <- train(
   trControl = train_control
 )
 
-#rf_model_p$results
-
 best_mtry <- rf_model_p$bestTune$mtry
 best_min_node_size <- rf_model_p$bestTune$min.node.size
 logit_models[["RandForest"]] <- rf_model_p
 CV_RMSE_folds[["RandForest"]] <- rf_model_p$resample[,c("Resample", "RMSE")]
 
 
-```
-# variable from our best logit model (take off the interaction)
-# models
-
-```{r,  message = F,warning = F, echo = FALSE, eval=TRUE}
-
-# Get average (ie over the folds) RMSE and AUC ------------------------------------
-
-# AUC
-# Draw ROC Curve and calculate AUC for each folds --------------------------------
-CV_AUC_folds <- list()
-
-for (model_name in names(logit_models)) {
-  
-  auc <- list()
-  model <- logit_models[[model_name]]
-  for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
-    cv_fold <-
-      model$pred %>%
-      filter(Resample == fold)
-    
-    roc_obj <- roc(cv_fold$obs, cv_fold$Hyp.Growth)
-    auc[[fold]] <- as.numeric(roc_obj$auc)
-  }
-  CV_AUC_folds[[model_name]] <- data.frame("Resample" = names(auc),
-                                           "AUC" = unlist(auc))
-}
-
-#CV_AUC_folds
-#CV_RMSE_folds
-
-# For each model: average RMSE and average AUC for models ----------------------------------
-CV_RMSE <- list()
-CV_AUC <- list()
-for (model_name in names(logit_models)) {
-  CV_RMSE[[model_name]] <- mean(CV_RMSE_folds[[model_name]]$RMSE)
-  CV_AUC[[model_name]] <- mean(CV_AUC_folds[[model_name]]$AUC)
-}
-#CV_RMSE
-#CV_AUC 
-
-# Model Selection ---------------------------------
-
-# 7 models, (5 logit , 1-1 logit LASSO & RF). For each we have a 5-CV RMSE and AUC.
-# Nice Summary Table -------------------
-
-nvars <- lapply(logit_models, FUN = function(x) length(x$coefnames))
-nvars[["LASSO"]] <- sum(lasso_coeffs != 0)
-
-logit_summary1 <- data.frame("Model" = names(logit_models),
-                             "Number of predictors" = unlist(nvars),
-                             "CV RMSE" = unlist(CV_RMSE),
-                             "CV AUC" = unlist(CV_AUC))
-
-logit_summary1 %>% as_hux()
 
 ```
+We started by carrying out a probability prediction by logit. Used 5-fold cross-validation to estimate models.
 
-# Classification
+We created five different models. The predictors of the first two models were handpicked and then we gradually add more categories at each models.
 
-```{r,  message = F,warning = F, echo = FALSE, eval=TRUE}
+* **X1** : Log of sales in Millions, the square of the Log of sales in Millions , Winsorized value of the change of the log of Sales versus last year, profit and loss by total sales, Industries categories
+
+* **X2** : X1, fixed assets divided by total assets, share equity divided by total assets,current liability divided by total assets, hight flags for current liability divided by total assets, flag error for current liability divided by total assets,age, foreign_management
+
+* **X3** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth
+
+* **X4** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth, _Financial 2_, _HR_, _Data quality_
+
+* **X5** : Log of sales in Millions, the square of the Log of sales in Millions, Firm, Financial 1, Growth , Financial 2, HR, Data quality, _Interactions_
+
+# variables - tables
+
+```{r loss function, message = F,warning = F, echo = FALSE, eval=TRUE}
 # Introduce loss function ------------------
 # relative cost of of a false negative classification (as compared with a false positive classification)
  # False Positive: 
@@ -403,8 +310,8 @@ logit_summary1 %>% as_hux()
  # False Negative: 
     # We dont invest but we should have -> we dont triple our money =
  # Scale it to whole numbers -> 10-11
-FP=3  
-FN=5 
+FP <- 3  
+FN <- 5 
 cost <- FN/FP
 
 # CAGR for Hypergrowth companies -> triple in size in 2 years 
@@ -424,7 +331,44 @@ prop.table(table(data$default,data$HyperGrowth),2) %>% as_hux()
 # the prevalence, or the proportion of cases in the population (n.cases/(n.controls+n.cases))
 prevelance = sum(data_train$HyperGrowth_f == "Hyp.Growth")/length(data_train$HyperGrowth_f)
 
-# Draw ROC Curve and find optimal threshold with loss function --------------------------
+
+```
+
+
+```{r, message = F,warning = F, echo = FALSE, eval=TRUE}
+# Get average (ie over the folds) RMSE and AUC ------------------------------------
+
+# AUC
+# Draw ROC Curve and calculate AUC for each folds --------------------------------
+CV_AUC_folds <- list()
+
+for (model_name in names(logit_models)) {
+  
+  auc <- list()
+  model <- logit_models[[model_name]]
+  for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
+    cv_fold <- model$pred %>% filter(Resample == fold)
+    roc_obj <- roc(cv_fold$obs, cv_fold$Hyp.Growth)
+    auc[[fold]] <- as.numeric(roc_obj$auc)
+  }
+  CV_AUC_folds[[model_name]] <- data.frame("Resample" = names(auc), "AUC" = unlist(auc))
+}
+
+# For each model: average RMSE and average AUC for models ----------------------------------
+CV_RMSE <- list()
+CV_AUC <- list()
+for (model_name in names(logit_models)) {
+  CV_RMSE[[model_name]] <- mean(CV_RMSE_folds[[model_name]]$RMSE)
+  CV_AUC[[model_name]] <- mean(CV_AUC_folds[[model_name]]$AUC)
+}
+
+# Model Selection ---------------------------------
+
+# 7 models, (5 logit , 1-1 logit LASSO & RF). For each we have a 5-CV RMSE and AUC.
+# Nice Summary Table -------------------
+nvars <- lapply(logit_models, FUN = function(x) length(x$coefnames))
+nvars[["LASSO"]] <- sum(lasso_coeffs != 0)
+
 best_tresholds <- list()
 expected_loss <- list()
 logit_cv_rocs <- list()
@@ -437,19 +381,14 @@ for (model_name in names(logit_models)) {
   best_tresholds_cv <- list()
   expected_loss_cv <- list()
 
-#  fold <- "Fold5"
   for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
-    cv_fold <-
-      model$pred %>%
-      filter(Resample == fold)
-
+    cv_fold <- model$pred %>% filter(Resample == fold)
     roc_obj <- roc(cv_fold$obs, cv_fold$Hyp.Growth)
     best_treshold <- coords(roc_obj, "best", ret="all", transpose = FALSE,
                             best.method="youden", best.weights=c(cost, prevelance))
     best_tresholds_cv[[fold]] <- best_treshold$threshold
     expected_loss_cv[[fold]] <- (best_treshold$fp*FP + best_treshold$fn*FN)/length(cv_fold$Hyp.Growth)
   }
-
   # average
   best_tresholds[[model_name]] <- mean(unlist(best_tresholds_cv)[is.finite(unlist(best_tresholds_cv)) == T])
   expected_loss[[model_name]] <- mean(unlist(expected_loss_cv)[is.finite(unlist(expected_loss_cv)) == T])
@@ -458,7 +397,6 @@ for (model_name in names(logit_models)) {
   logit_cv_rocs[[model_name]] <- roc_obj
   logit_cv_threshold[[model_name]] <- best_treshold
   logit_cv_expected_loss[[model_name]] <- expected_loss_cv[[fold]]
-
   }
 
 # Summary results ---------------------------------------------------
@@ -468,17 +406,39 @@ summary_results <- data.frame("Model" = names(logit_models),
                               "CV AUC" = unlist(CV_AUC),
                               "CV threshold" = unlist(best_tresholds),
                               "CV expected Loss" = unlist(expected_loss))
-#names(summary_results) <- NULL
 rownames(summary_results) <- NULL
-
-
 summary_results %>% as_hux()
+
+
+```
+# all variables
+# comparing lasso to the best logit
+
+
+## Random forest
+```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
+
+
+```
+# variable from our best logit model (take off the interaction)
+# models
+
+```{r,  message = F,warning = F, echo = FALSE, eval=TRUE}
+
+
+
+```
+
+# Classification
+
+```{r,  message = F,warning = F, echo = FALSE, eval=TRUE}
+
 
 
 ```
 
 
-## Model Diagnostics & Ex-Sample Testing
+## Ex-Sample Testing & Model Diagnostics 
 ```{r, eval=TRUE, echo=FALSE, results='asis'}
 # Pick best model based on average expected loss ----------------------------------
 
