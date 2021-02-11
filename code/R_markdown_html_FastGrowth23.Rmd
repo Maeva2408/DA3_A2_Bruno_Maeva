@@ -10,8 +10,10 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 # Executive Summary
-This analysis aimed at predicting the fast growing of a firm.
+
+This analysis aimed at predicting the fast growth of firm as of 2012, 2 years into the future. We used the bisnode-panel dataset & defined fast growth as firms reaching at least a 25% compound average growth rate over the next 2 years, an achievement ca. 16% of firms achieved in our sample. Our sample consisted of about 15000 firms across a variaty of industries. Assumming our client to be a silent investor group, we only took into account firms at least 1 year old, whom boast sales between 10 thousand, & 10 million euros. Our final model tested on the holdout sample with 0.362 RMSE, & 64.8% 'Area under the Curve', though perhaps more importantly, recommended 42 firms to invest in (25 more then our benchmark model), & netting in total 404 thousand euros of profits, a 97.7% return on investment. 
 
 
 ```{r, include=F, message=FALSE, echo=FALSE, eval=TRUE}
@@ -19,6 +21,7 @@ This analysis aimed at predicting the fast growing of a firm.
 rm(list=ls())
 
 # Import libraries
+library(viridis)
 library(huxtable)
 library(gridExtra)
 library(haven)
@@ -138,9 +141,9 @@ $$CAGR = (\frac{Vfinal}{Vbegin})^\frac{1}{t} - 1$$
 
 ## Sample Design
 
-As business context, we consider our client to be a silent investor group as of 2012, who is looking for suitable companies to invest in, with expected returns on their investments in 2 years. As such, we considered companies at least 1 year old, since such companies have already accumulated financial data over multiple years, yet many are young, with higher chances of gaining further market share. We only considered businesses generating annual sales between 100 thousand, & 10 million Euros, boasting sufficiently large sales for the business venture to be considered 'serious', yet small enough for it's size not to be considered a disadvantage. After having design our sample, we end up with 14896 companies and 2413 of them (16%) are fast growing.
+As business context, we consider our client to be a silent investor group as of 2012, who is looking for suitable companies to invest in, with expected returns on their investments in 2 years. As such, we considered companies at least 1 year old, since such companies have already accumulated financial data over multiple years, yet many are young, with higher chances of gaining further market share. We only considered businesses generating annual sales between 10 thousand, & 10 million Euros, boasting sufficiently large sales for the business venture to be considered 'serious', yet small enough for it's size not to be considered a disadvantage. After having design our sample, we end up with 14896 companies and 2413 of them (16%) are fast growing.
 
-```{r , message = F, warning = F, echo = T, fig.align='center', fig.height=3, fig.width= 6}
+```{r CAGR plot, eval = T, include = F, message = F, warning = F, echo = F, fig.align='center', fig.height=3, fig.width= 6}
 CAGR_plot <- ggplot(data,aes(x = CAGR)) +
   geom_histogram(binwidth = 5, color = "orangered4", fill = "salmon") +
   geom_vline( xintercept = 25, color = "coral4", linetype = "dashed") +
@@ -148,8 +151,10 @@ CAGR_plot <- ggplot(data,aes(x = CAGR)) +
   theme_tufte() + labs(title = "CAGR % Sample Distribution & Cut-off Point ",
                        y = "Frequency among Firms", y = "CAGR % ")
 
-grid.arrange(CAGR_plot,ncol = 1)
+```
 
+```{r, message = F, warning = F, echo = F, fig.align='center', fig.height=3, fig.width= 6}
+grid.arrange(CAGR_plot,ncol = 1)
 ```
 
 
@@ -159,7 +164,7 @@ Now, we need to select, clean & possibly transform our x variables. Some variabl
 
 * **Firm**, _5 variables_ : Age of firm, squared age, a dummy if newly established, industry categories, location regions for its headquarters, and dummy if located in a big city
 
-* **Financial 1**,  _16 variables_ : Winsorized financial variables : sales, fixed, liquid, current, intangible assets, curret liabilities, inventories, equity shares, subscribed capital, sales revenues, income before tax, extra income, material personal and extra expenditure, extra profit, EBDTA, amortization and tangible assets.
+* **Financial 1**,  _16 variables_ : Winsorized financial variables : sales, fixed, liquid, current, intangible assets, curret liabilities, inventories, equity shares, subscribed capital, sales revenues, income before tax, extra income, material personal and extra expenditure, extra profit, EBITDA, amortization and tangible assets.
 
 * **Financial 2** : Flags (extrem, low, high, zero - when applicable) and polynomials : quadratic term are created for profit and loss, extra profit and loss, income before tax, and share equity.
 
@@ -197,6 +202,8 @@ train_control <- trainControl(
   summaryFunction = twoClassSummaryExtended,
   savePredictions = TRUE
 )
+
+
 
 # Train Logit Models ----------------------------------------------
 logit_model_vars <- list("X1" = X1, "X2" = X2, "X3" = X3, "X4" = X4, "X5" = X5)
@@ -336,6 +343,7 @@ prevelance <- sum(data_train$HyperGrowth_f == "Hyp.Growth")/length(data_train$Hy
 
 ```{r, message = F,warning = F, echo = FALSE, eval=TRUE}
 # Get average (ie over the folds) RMSE and AUC ------------------------------------
+options(scipen=999)
 
 # AUC
 # Draw ROC Curve and calculate AUC for each folds --------------------------------
@@ -419,7 +427,7 @@ We base our final model selection on minimized expected loss, for which we first
 ## Ex-Sample Testing & Model Diagnostics 
 ```{r, eval=TRUE, message = F, warning = F, echo=FALSE, results='asis'}
 # Pick best model based on average expected loss ----------------------------------
-
+options(scipen=999)
 best_logit_with_loss <- logit_models[["X4"]]
 best_logit_optimal_treshold <- best_tresholds[["X4"]]
 
@@ -441,6 +449,8 @@ data_holdout$holdout_prediction <-
 cm_object3 <- confusionMatrix(data_holdout$holdout_prediction,data_holdout$HyperGrowth_f)
 cm3 <- cm_object3$table
 
+#cm3 %>% kable()
+
 # Benchmark Model --------------------
 benchmark_model <- logit_models[["X1"]]
 benchmark_threshold <- best_tresholds[["X1"]]
@@ -457,43 +467,128 @@ cm4 <- cm_object_benchmark$table
 colnames(cm3) <- paste0(colnames(cm3),c("Final_Model","Final_Model"))
 colnames(cm4) <- paste0(colnames(cm4),c("Benchmark_Model","Benchmark_Model"))
 prediction <- c("no_Hyp.Growth","Hyp.Growth")
-as.data.frame(prediction)
+#as.data.frame(prediction)
 
-cbind(as.data.frame(prediction),cbind(cm3,cm4)) %>% as_hux(add_colnames = T)
+CM_FinalModel <- cbind(prediction,cm3) 
 
-# Average Growth among invested companies
-#data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
-#  summarize(AvgAnnGrowth = mean(CAGR)) %>% as_hux()
+
+# discrete ROC (with thresholds in steps) on holdout -------------------------------------------------
+thresholds <- seq(0.05, 0.75, by = 0.02)
+cm <- list()
+true_positive_rates <- c()
+false_positive_rates <- c()
+
+#thr <- thresholds[1]
+for (thr in thresholds) {
+  holdout_prediction <- ifelse(data_holdout[,"holdout_prediction"] < thr, "no_Hyp.Growth", "Hyp.Growth") %>%
+    factor(levels = c("no_Hyp.Growth", "Hyp.Growth"))
+  cm_thr <- confusionMatrix(holdout_prediction,data_holdout$HyperGrowth_f)$table
+  cm[[as.character(thr)]] <- cm_thr
+  true_positive_rates <- c(true_positive_rates, cm_thr["Hyp.Growth", "Hyp.Growth"] /
+                             (cm_thr["Hyp.Growth", "Hyp.Growth"] + cm_thr["no_Hyp.Growth", "Hyp.Growth"]))
+  false_positive_rates <- c(false_positive_rates, cm_thr["Hyp.Growth", "no_Hyp.Growth"] /
+                              (cm_thr["Hyp.Growth", "no_Hyp.Growth"] + cm_thr["no_Hyp.Growth", "no_Hyp.Growth"]))
+}
+
+tpr_fpr_for_thresholds <- tibble(
+  "threshold" = thresholds,
+  "true_positive_rate" = true_positive_rates,
+  "false_positive_rate" = false_positive_rates
+)
+
+discrete_roc_plot <- ggplot(
+  data = tpr_fpr_for_thresholds,
+  aes(x = false_positive_rate, y = true_positive_rate, color = thresholds)) +
+  labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)",
+       title = "Final Models' ROC Curve on Holdout Set") +
+  geom_point(size=2, alpha=0.8) +
+  geom_abline(intercept = 0, slope = 1,  linetype = "dotted", col = "black") +
+  scale_color_viridis(option = "D", direction = -1) +
+  scale_x_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
+  scale_y_continuous(expand = c(0.01,0.01), limit=c(0,1), breaks = seq(0,1,0.1)) +
+  theme_bg() +
+  theme(legend.position ="right") +
+  theme(legend.title = element_text(size = 4), 
+        legend.text = element_text(size = 4),
+        legend.key.size = unit(.4, "cm")) 
+
+
+```
+
+```{r, message = F, warning = F, eval=TRUE, echo=FALSE, results='asis', fig.align='center', fig.height=3, fig.width=6}
+
+Nvars <- summary_results$Number.of.predictors[4]
+RMSE_X4 <- round(RMSE(data_holdout$best_logit_with_loss_pred, data_holdout$HyperGrowth),3)
+AUC <- round(summary_results$CV.AUC[4],3)
+Threshold <- round(summary_results$CV.threshold[4],3)
+expected_loss_X4 <- round((holdout_treshold$fp*FP + holdout_treshold$fn*FN)/length(data_holdout$HyperGrowth),3)
+Name <- "Logit X4"
+Finals <- as.data.frame(cbind(Name,Nvars,RMSE_X4,AUC,Threshold,expected_loss_X4))
+
+colnames(Finals) <- c("Final_Model", "Nr.Vars","RMSE","AUC","Threshold","Expected_Loss")
+rownames(Finals) <- NULL
+
+Finals %>% as_huxtable()
+
+```
+Our model performs on the holdout set very similarly as during cross validation. The loss function slightly increased to 0,803, vs 0,793. The lack of variation between the holdout set & cross validation confirmed that we did not overfit our data, meanwhile still outperforming the benchmark model.
+
+
+
+```{r, message = F, warning = F, eval=TRUE, echo=FALSE, results='asis', fig.align='center', fig.height=3, fig.width=6}
+
+#grid.arrange(discrete_roc_plot, ncol = 1 )
+
+
+```
+
+
+
+```{r, message = F, warning = F, eval=TRUE, echo=FALSE, results='asis', fig.align='center', fig.height=3, fig.width=6}
+
+CM_FinalModel %>% as_hux(add_colnames = T, add_rownames = F)
+
 ```
 
 
 
 ```{r, message = F, warning = F, eval=TRUE, echo=FALSE, results='asis'}
 # Average Growth among invested companies
+options(scipen=999)
+
 Outcomes <- data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% group_by(HyperGrowth_f) %>% 
   summarize(AvgAnnGrowth = mean(CAGR),
             Firms_Selected = n(),
-            Investment_per_Firm = 10000) 
+            Investment_per_Firm = "10000") 
+OutcomesAgg <- data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
+  summarize(HyperGrowth_f = "Total",
+            AvgAnnGrowth = mean(CAGR),
+            Firms_Selected = n(),
+            Investment_per_Firm = "10000") 
+
+Outcomes <- Outcomes %>% add_row( OutcomesAgg)
+
 
 Loss <-  (21 * 10000 * (1 - 0.293)^2) - 210000  
 Win <-  (21 * 10000 * (1+ 0.859)^2) - 210000
-NetEarnings <- rbind(Loss,Win)
+Total <- Win + Loss
+NetEarnings <- as.character(round(rbind(Loss,Win,Total),0))
+
+
+# Benchmark Loss:
+#L <- (12 * 10000 * (1 - 0.227)^2) - 120000  
+#W <- (5 * 10000 * (1 + 1.453)^2) - 50000  
+#(W + L) / 170000
+
+
 cbind(Outcomes,NetEarnings) %>% as_hux()
-(Win + Loss) / 420000
-
-
-
-OutcomePerInd <- data_holdout[data_holdout$holdout_prediction == "Hyp.Growth",] %>% 
-  group_by(HyperGrowth_f,ind2) %>% 
-  summarize(AvgAnnGrowth = mean(CAGR),
-            Nr_Investments = n()) %>% as_hux()
 
 ```
 
-```{r}
-OutcomePerInd
-```
 
+Let's assume that we are advising an investor to invest in companies based on our model's recommendation. The models predicted 42 companies with fast growing sales. If the investor invest 10000 euro in the 42 companies, he will lose 105.032 with the 21 companies that did not actually have fast growing sales. However, he will gain 515.735 euro with the 21 companies that actually did have fast growth sales. So, the win would be of 410 703 euro for 420 000 euro invested, a Return on Investment of 97.7%. Though our benchmark model netted higher ROI, it found only 17 firms to invest in, with 12 of them subject to false positive error. Thus, vs the benchmark, our final model found 25 more investment opportunities, & offers a better likelihood of the investment to be fruitful.   
 
 # Conclusion / Summary
+
+This analysis aimed at predicting if a firm is growing fast in the coming two years, we used a large & complex dataset of firms from various industries. We specified 7 models: 5 logit, 1-1 Lasso & Random Forest. We defined our loss function to classify firms that would likely grow fast or not. After analysing the RMSE, the AUC, & loss function, we found the 4th Logit Model to be the best model, utilizing 114 variables. After evaluating our model in our holdout threshold, it predicted 42 firms would have a fast growth. Though half on them were false positive, we still significantly improved vs our benchmark models' 29% true positive rate. Nevertheless, we calculated that if the investor invest in all recommended firms, the benefits gained by investing in fast growing firm will vastly compensate the losses incurred from less successful firms.
 

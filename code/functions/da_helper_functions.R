@@ -433,7 +433,7 @@ createRocPlot <- function(r, file_name,  myheight_small = 5.625, mywidth_small =
     theme_bg()
   #+    theme(axis.text.x = element_text(size=13), axis.text.y = element_text(size=13),
   #        axis.title.x = element_text(size=13), axis.title.y = element_text(size=13))
-  save_fig(file_name, output, "small")
+#  save_fig(file_name, output, "small")
 
   #ggsave(plot = roc_plot, paste0(file_name, ".png"),      width=mywidth_small, height=myheight_small, dpi=1200)
   #cairo_ps(filename = paste0(file_name, ".eps"),    #        width = mywidth_small, height = myheight_small, pointsize = 12,    #       fallback_resolution = 1200)
